@@ -99,6 +99,22 @@ def find_sleep_event_impact(events: Any) -> int | None:
     return found[0] if found else None
 
 
+def level_index(day: dict[str, Any]) -> int:
+    """Position of the battery level inside each bodyBatteryValuesArray entry.
+
+    Garmin ships a descriptor list naming the columns; reading it keeps the
+    parser working if the column order ever changes. Falls back to the layout
+    Garmin has used so far: [timestamp, status, level, version].
+    """
+    descriptors = day.get("bodyBatteryValueDescriptorDTOList") or []
+    for descriptor in descriptors:
+        key = str(descriptor.get("bodyBatteryValueDescriptorKey") or "").lower()
+        index = descriptor.get("bodyBatteryValueDescriptorIndex")
+        if "level" in key and isinstance(index, int):
+            return index
+    return 2
+
+
 def body_battery_series(client: Garmin, date: str) -> list[tuple[int, int]]:
     """(timestamp_ms, level) samples covering the night that ends on date."""
     previous = (dt.date.fromisoformat(date) - dt.timedelta(days=1)).isoformat()
@@ -106,11 +122,11 @@ def body_battery_series(client: Garmin, date: str) -> list[tuple[int, int]]:
 
     samples: list[tuple[int, int]] = []
     for day in days:
+        index = level_index(day)
         for entry in day.get("bodyBatteryValuesArray") or []:
-            # Entries look like [timestamp_ms, status, level, version].
-            if not isinstance(entry, list) or len(entry) < 3:
+            if not isinstance(entry, list) or len(entry) <= index:
                 continue
-            timestamp, level = entry[0], entry[2]
+            timestamp, level = entry[0], entry[index]
             if isinstance(timestamp, (int, float)) and isinstance(level, (int, float)):
                 samples.append((int(timestamp), int(level)))
 
@@ -163,6 +179,28 @@ def collect_day(client: Garmin, date: str) -> dict[str, Any] | None:
     return record
 
 
+def dump_raw(client: Garmin, date: str, path: Path) -> None:
+    """Write Garmin's untouched responses so field names can be checked."""
+    previous = (dt.date.fromisoformat(date) - dt.timedelta(days=1)).isoformat()
+    raw: dict[str, Any] = {"date": date}
+
+    for name, call in (
+        ("sleep", lambda: client.get_sleep_data(date)),
+        ("body_battery", lambda: client.get_body_battery(previous, date)),
+        ("body_battery_events", lambda: client.get_body_battery_events(date)),
+    ):
+        try:
+            raw[name] = call()
+        except Exception as error:  # noqa: BLE001 - debugging aid only
+            raw[name] = {"error": str(error)}
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(raw, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
+    )
+    print(f"Raw responses for {date} written to {path}\n")
+
+
 def load_existing(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"generatedAt": None, "days": {}}
@@ -182,6 +220,12 @@ def main() -> int:
     )
     parser.add_argument("--end", default=None, help="last date to fetch (YYYY-MM-DD)")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--dump-raw",
+        type=Path,
+        default=None,
+        help="also write Garmin's untouched responses here, for debugging",
+    )
     args = parser.parse_args()
 
     end = dt.date.fromisoformat(args.end) if args.end else dt.date.today()
@@ -199,6 +243,9 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+
+    if args.dump_raw:
+        dump_raw(client, dates[-1], args.dump_raw)
 
     data = load_existing(args.output)
     changed = 0
@@ -227,9 +274,12 @@ def main() -> int:
         if index < len(dates) - 1:
             time.sleep(1)  # stay well under Garmin's rate limit
 
-    data["generatedAt"] = dt.datetime.now(dt.timezone.utc).isoformat(
-        timespec="seconds"
-    )
+    if changed:
+        # Stamped only on a real change, so an unchanged file stays byte-identical
+        # and the workflow does not commit a new timestamp three times a day.
+        data["generatedAt"] = dt.datetime.now(dt.timezone.utc).isoformat(
+            timespec="seconds"
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n",

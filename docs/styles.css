@@ -221,7 +221,7 @@ thead th.sunday { color: var(--sunday); }
 thead th.today { box-shadow: inset 0 -3px 0 var(--sunday); }
 
 td.day {
-  height: 40px;
+  height: 44px;  /* Apple's minimum comfortable touch target */
   vertical-align: middle;
 }
 
@@ -238,7 +238,7 @@ tr.section-start td { border-top: 2px solid var(--rule-strong); }
 
 .cell {
   width: 100%;
-  height: 40px;
+  height: 44px;
   border: 0;
   background: none;
   display: grid;

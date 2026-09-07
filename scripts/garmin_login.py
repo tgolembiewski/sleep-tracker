@@ -16,9 +16,12 @@ starts failing with an authentication error.
 from __future__ import annotations
 
 import getpass
+import os
 import sys
 
 from garminconnect import Garmin
+
+TOKEN_DIR = os.path.expanduser("~/.garminconnect")
 
 
 def main() -> int:
@@ -29,10 +32,12 @@ def main() -> int:
     client.login()
 
     tokens = client.client.dumps()
+    client.client.dump(TOKEN_DIR)
     profile = client.get_full_name()
 
     print()
     print(f"Logged in as: {profile}")
+    print(f"Tokens also saved to {TOKEN_DIR} for local runs.")
     print()
     print("Add the following as a GitHub Actions secret named GARMIN_TOKENS")
     print("(Settings -> Secrets and variables -> Actions -> New repository secret).")

@@ -54,13 +54,23 @@ starts failing to authenticate.
 `/docs`. After a minute the app is live at
 `https://<user>.github.io/sleep-tracker/`.
 
-### 4. Run the sync once
+### 4. Check the fetch against your own account first
+
+```bash
+.venv/bin/python scripts/fetch_garmin.py --days 3 --output /tmp/test.json --dump-raw /tmp/garmin-raw.json
+```
+
+`--dump-raw` writes Garmin's untouched responses next to the parsed result. If a
+day comes back as `body battery unknown`, that file shows which field names
+Garmin is actually using so the parser can be adjusted.
+
+### 5. Run the sync once
 
 **Actions → Garmin sync → Run workflow.** It fetches the last seven days and
 commits `docs/data.json` if anything changed. From then on it runs on its own at
 roughly 07:00, 10:00 and 13:00 Polish time.
 
-### 5. Install on the phone
+### 6. Install on the phone
 
 Open the Pages URL in **Safari** (not Chrome — only Safari can install to the
 home screen on iOS), tap **Share → Add to Home Screen**. Repeat on the iPad.
