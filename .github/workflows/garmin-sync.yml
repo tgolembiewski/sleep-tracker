@@ -62,4 +62,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/data.json
           git commit -m "chore: update Garmin data"
-          git push
+          # A run queued behind an earlier one checked out the older main, so
+          # rebase before pushing rather than failing on a non-fast-forward.
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
