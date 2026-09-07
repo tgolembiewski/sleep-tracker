@@ -2,12 +2,19 @@ name: Garmin sync
 
 on:
   schedule:
-    # Times are UTC. Poland is UTC+2 in summer and UTC+1 in winter, so these
-    # land roughly at 07:00, 10:00 and 13:00 local time.
-    - cron: "0 5 * * *"
-    - cron: "0 8 * * *"
-    - cron: "0 11 * * *"
+    # Times are UTC; Poland runs UTC+2 in summer and UTC+1 in winter.
+    # Every 15 minutes across the morning, so the night shows up in the app
+    # shortly after the watch syncs. Runs short-circuit without touching
+    # Garmin once the sleep score for the day is on file.
+    - cron: "*/15 3-8 * * *"
+    # One wider pass in the afternoon to catch watches that synced late.
+    - cron: "0 12 * * *"
   workflow_dispatch:
+    inputs:
+      days:
+        description: "How many trailing days to refetch"
+        required: false
+        default: "7"
 
 concurrency:
   group: garmin-sync
@@ -29,10 +36,21 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Choose the fetch window
+        id: window
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "args=--days ${{ inputs.days }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 12 * * *" ]; then
+            echo "args=--days 7" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--days 1 --skip-if-complete" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fetch sleep score and body battery
         env:
           GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
-        run: python scripts/fetch_garmin.py --days 7
+        run: python scripts/fetch_garmin.py ${{ steps.window.outputs.args }}
 
       - name: Commit updated data
         run: |

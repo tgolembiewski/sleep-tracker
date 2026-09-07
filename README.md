@@ -67,8 +67,20 @@ Garmin is actually using so the parser can be adjusted.
 ### 5. Run the sync once
 
 **Actions → Garmin sync → Run workflow.** It fetches the last seven days and
-commits `docs/data.json` if anything changed. From then on it runs on its own at
-roughly 07:00, 10:00 and 13:00 Polish time.
+commits `docs/data.json` if anything changed.
+
+From then on it polls every 15 minutes between 03:00 and 08:59 UTC — 05:00 to
+10:59 Polish summer time, an hour earlier in winter — so the night lands in the
+app shortly after your watch syncs. Each of those runs asks Garmin for one day
+only, and skips the call entirely once that day's sleep score is already on
+file, so a normal morning costs two or three requests rather than dozens. A
+single wider pass at 12:00 UTC refetches the last seven days to pick up any
+watch that synced late.
+
+To shift the window, edit the first `cron` line in
+`.github/workflows/garmin-sync.yml`. `*/15 3-8 * * *` means "every 15 minutes
+during UTC hours 3 through 8"; subtract two from your local summer wake-up hour
+to get the UTC hour to start at.
 
 ### 6. Install on the phone
 
@@ -119,8 +131,15 @@ night, and matching the column you would tick on the paper sheet.
 - `python-garminconnect` talks to Garmin's private endpoints, not a documented
   public API. Garmin can change them at any time; if the workflow starts
   returning empty days, upgrade the pinned version in `requirements.txt`.
-- The workflow deliberately re-fetches a rolling seven-day window, because a
-  watch that syncs late would otherwise leave a permanent gap.
+- The workflow deliberately re-fetches a rolling seven-day window once a day,
+  because a watch that syncs late would otherwise leave a permanent gap.
+- GitHub's scheduled runs are queued on shared runners and typically start five
+  to twenty minutes after the nominal time, occasionally later. Treat the
+  morning window as "within half an hour of waking", not as an alarm clock. The
+  app also refetches whenever you open or return to it, so pulling it up after
+  breakfast always shows the newest data.
+- GitHub disables scheduled workflows in repositories with no activity for 60
+  days. This one commits most days, which counts as activity.
 
 ## Regenerating the icons
 

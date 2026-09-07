@@ -226,6 +226,12 @@ def main() -> int:
         default=None,
         help="also write Garmin's untouched responses here, for debugging",
     )
+    parser.add_argument(
+        "--skip-if-complete",
+        action="store_true",
+        help="exit without contacting Garmin when every requested day already "
+        "has a sleep score on file",
+    )
     args = parser.parse_args()
 
     end = dt.date.fromisoformat(args.end) if args.end else dt.date.today()
@@ -233,6 +239,14 @@ def main() -> int:
         (end - dt.timedelta(days=offset)).isoformat()
         for offset in range(args.days - 1, -1, -1)
     ]
+
+    if args.skip_if_complete:
+        # Lets the morning poll run every quarter of an hour while still hitting
+        # Garmin only until the night actually shows up.
+        known = load_existing(args.output).get("days", {})
+        if all((known.get(date) or {}).get("sleepScore") is not None for date in dates):
+            print("Every requested day already has a sleep score, nothing to do.")
+            return 0
 
     try:
         client = connect()
