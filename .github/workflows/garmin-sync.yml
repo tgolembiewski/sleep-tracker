@@ -1,0 +1,47 @@
+name: Garmin sync
+
+on:
+  schedule:
+    # Times are UTC. Poland is UTC+2 in summer and UTC+1 in winter, so these
+    # land roughly at 07:00, 10:00 and 13:00 local time.
+    - cron: "0 5 * * *"
+    - cron: "0 8 * * *"
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: garmin-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch sleep score and body battery
+        env:
+          GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
+        run: python scripts/fetch_garmin.py --days 7
+
+      - name: Commit updated data
+        run: |
+          if git diff --quiet -- docs/data.json; then
+            echo "No new Garmin data."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git commit -m "chore: update Garmin data"
+          git push

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Tracker nawyków snu</title>
+<meta name="description" content="28-dniowy tracker nawyków snu z automatycznym pobieraniem Garmin Sleep Score i wpływu snu na Body Battery.">
+<meta name="theme-color" content="#4a6699" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f131c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sen">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-180.png">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="grow">
+    <h1>Tracker nawyków snu</h1>
+    <p class="meta" id="meta">Ładowanie…</p>
+  </div>
+  <button class="icon-button" id="refresh" type="button" title="Odśwież dane z Garmina" aria-label="Odśwież dane z Garmina">⟳</button>
+  <button class="icon-button" id="open-settings" type="button" title="Ustawienia" aria-label="Ustawienia">⚙</button>
+</header>
+
+<nav class="weekbar" id="weekbar" aria-label="Wybór tygodnia"></nav>
+
+<main>
+  <div class="grid-wrap">
+    <table class="grid" id="grid"></table>
+  </div>
+
+  <section class="notes" id="notes">
+    <h2>Notatki dnia</h2>
+  </section>
+
+  <section class="legend">
+    <div class="card wide">
+      <h2>Jak używać</h2>
+      Zaznacz <b>✔</b> gdy nawyk zrobiony. <b>Szare pola</b> = tego nawyku jeszcze nie śledzisz
+      (dochodzi w danym tygodniu wg planu). W wierszu <b>Energia rano</b> wpisz liczbę <b>1–5</b>
+      (1 = wyczerpany, 5 = w pełni wypoczęty). Zasada <b>„nigdy dwa razy z rzędu”</b>: jeden
+      opuszczony dzień to wypadek, dwóch z rzędu nie odpuszczaj.
+    </div>
+
+    <div class="card wide">
+      <h2>Skala „Energia rano”</h2>
+      <p class="hint" style="margin:0 0 10px">Oceń w pierwszych minutach po wstaniu, przed kawą i telefonem.</p>
+      <div class="scale">
+        <div class="scale-row"><span class="scale-badge s1">1</span><span><b>Wyczerpany</b><br>budzik to udręka, ciężka głowa, „mgła”</span></div>
+        <div class="scale-row"><span class="scale-badge s2">2</span><span><b>Ospały</b><br>wstajesz z trudem, rozkręcasz się wolno</span></div>
+        <div class="scale-row"><span class="scale-badge s3">3</span><span><b>Średnio</b><br>funkcjonujesz, ale bez energii — „da się”</span></div>
+        <div class="scale-row"><span class="scale-badge s4">4</span><span><b>Dobrze</b><br>wstajesz lekko, szybko gotowy do działania</span></div>
+        <div class="scale-row"><span class="scale-badge s5">5</span><span><b>W pełni wypoczęty</b><br>budzisz się bez walki, jasna głowa od razu</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Garmin Sleep Score (0–100)</h2>
+      Poniżej 60 = słabo · 60–79 = przyzwoicie · 80–89 = dobrze · 90–100 = doskonale.
+      Wynik wczytuje się automatycznie z Garmin Connect obok Twojej oceny energii — po tygodniu
+      zobaczysz, czy odczucie i dane idą w tę samą stronę (rozjazdy też są ciekawą wskazówką).
+    </div>
+
+    <div class="card">
+      <h2>Body Battery — wpływ netto snu</h2>
+      Przyrost w trakcie snu: poziom przy pobudce minus poziom przy zaśnięciu (np. +53).
+      Często tłumaczy lepiej niż sam wynik snu, dlaczego czułeś się słabo mimo dobrej nocy.
+    </div>
+
+    <div class="card wide">
+      Liczy się trend, nie pojedynczy dzień: plan działa, jeśli w kolejnych tygodniach coraz
+      częściej wpisujesz 4–5 zamiast 2–3. Niski wynik to informacja, nie ocena Ciebie.
+      Śledź nawyki narastająco — w tygodniu 1 tylko „stała pora wstawania”, w kolejnych dokładaj
+      następne wiersze.
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="./app.js"></script>
+</body>
+</html>
