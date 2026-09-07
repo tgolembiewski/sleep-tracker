@@ -73,18 +73,22 @@ Garmin is actually using so the parser can be adjusted.
 **Actions → Garmin sync → Run workflow.** It fetches the last seven days and
 commits `docs/data.json` if anything changed.
 
-From then on it polls every 15 minutes between 03:00 and 08:59 UTC — 05:00 to
-10:59 Polish summer time, an hour earlier in winter — so the night lands in the
-app shortly after your watch syncs. Each of those runs asks Garmin for one day
-only, and skips the call entirely once that day's sleep score is already on
-file, so a normal morning costs two or three requests rather than dozens. A
-single wider pass at 12:00 UTC refetches the last seven days to pick up any
-watch that synced late.
+From then on it polls every 15 minutes between 05:00 and 11:59 UTC, so the
+night lands in the app shortly after your watch syncs. Cron does not follow
+daylight saving, so that window is the union of both Polish offsets: 07:00 to
+13:59 in summer and 06:00 to 12:59 in winter, which covers waking any time
+between 07:00 and 11:00 in either season.
+
+Each of those runs asks Garmin for one day only, and skips the call entirely
+once that day's sleep score is already on file, so a normal morning costs two or
+three requests rather than dozens. A single wider pass at 15:00 UTC refetches
+the last seven days to pick up a watch that synced late.
 
 To shift the window, edit the first `cron` line in
-`.github/workflows/garmin-sync.yml`. `*/15 3-8 * * *` means "every 15 minutes
-during UTC hours 3 through 8"; subtract two from your local summer wake-up hour
-to get the UTC hour to start at.
+`.github/workflows/garmin-sync.yml`. `*/15 5-11 * * *` means "every 15 minutes
+during UTC hours 5 through 11"; subtract two from your earliest local summer
+wake-up hour to get the UTC hour to start at, and one from your latest to get
+the hour to end at.
 
 ### 6. Install on the phone
 

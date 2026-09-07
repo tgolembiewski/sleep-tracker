@@ -2,13 +2,15 @@ name: Garmin sync
 
 on:
   schedule:
-    # Times are UTC; Poland runs UTC+2 in summer and UTC+1 in winter.
-    # Every 15 minutes across the morning, so the night shows up in the app
-    # shortly after the watch syncs. Runs short-circuit without touching
-    # Garmin once the sleep score for the day is on file.
-    - cron: "*/15 3-8 * * *"
-    # One wider pass in the afternoon to catch watches that synced late.
-    - cron: "0 12 * * *"
+    # Times are UTC and cron does not follow daylight saving, so the window is
+    # the union of both Polish offsets: 05:00-11:59 UTC is 07:00-13:59 in
+    # summer (UTC+2) and 06:00-12:59 in winter (UTC+1), covering a 07:00-11:00
+    # wake-up either way. Every 15 minutes, so the night shows up shortly after
+    # the watch syncs; runs short-circuit without contacting Garmin once the
+    # sleep score for the day is on file.
+    - cron: "*/15 5-11 * * *"
+    # One wider pass later on to catch a watch that synced late.
+    - cron: "0 15 * * *"
   workflow_dispatch:
     inputs:
       days:
@@ -41,7 +43,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "args=--days ${{ inputs.days }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 12 * * *" ]; then
+          elif [ "${{ github.event.schedule }}" = "0 15 * * *" ]; then
             echo "args=--days 7" >> "$GITHUB_OUTPUT"
           else
             echo "args=--days 1 --skip-if-complete" >> "$GITHUB_OUTPUT"
