@@ -41,12 +41,16 @@ python3 -m venv .venv
 ```
 
 The script asks for your Garmin e-mail, password and (if enabled) an MFA code,
-then prints a token blob. Copy it into a repository secret named
-`GARMIN_TOKENS` under **Settings → Secrets and variables → Actions**.
+then saves the resulting tokens to `~/.garminconnect`. Hand them to GitHub with:
 
-Your password is never stored anywhere and never reaches GitHub. The OAuth1
-token inside the blob lasts about a year; re-run the script when the workflow
-starts failing to authenticate.
+```bash
+.venv/bin/python scripts/garmin_login.py --show-tokens | gh secret set GARMIN_TOKENS
+```
+
+Piping keeps the blob out of your scrollback and your clipboard. Your password
+is never stored and never reaches GitHub. The OAuth1 token inside the blob lasts
+about a year; re-run the login when the workflow starts failing to
+authenticate.
 
 ### 3. Turn on GitHub Pages
 
