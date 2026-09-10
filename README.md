@@ -136,6 +136,12 @@ night, and matching the column you would tick on the paper sheet.
 - Habit data lives only in `localStorage`. Clearing Safari website data, or
   deleting the installed app, deletes the tracker's history with it. The iPhone
   and the iPad keep separate copies and do not sync.
+- Both numbers come out of a single `get_sleep_data` call: `bodyBatteryChange`
+  is the same figure the Garmin Connect app prints as "Sleep +57", and
+  `sleepBodyBattery` is the overnight series whose first and last points become
+  `bbStart` and `bbEnd`. The `get_body_battery` endpoint is deliberately not
+  used — it returns only about six samples per day, too coarse to place sleep
+  onset accurately.
 - `python-garminconnect` talks to Garmin's private endpoints, not a documented
   public API. Garmin can change them at any time; if the workflow starts
   returning empty days, upgrade the pinned version in `requirements.txt`.
