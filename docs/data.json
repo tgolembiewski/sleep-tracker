@@ -5,113 +5,141 @@
       "bbEnd": 30,
       "bbStart": 5,
       "qualifier": "POOR",
+      "sleepEnd": "07:55",
       "sleepScore": 53,
-      "sleepSeconds": 18900
+      "sleepSeconds": 18900,
+      "sleepStart": "02:40"
     },
     "2026-08-29": {
       "bbDelta": 43,
       "bbEnd": 63,
       "bbStart": 20,
       "qualifier": "FAIR",
+      "sleepEnd": "09:25",
       "sleepScore": 70,
-      "sleepSeconds": 23460
+      "sleepSeconds": 23460,
+      "sleepStart": "02:53"
     },
     "2026-08-30": {
       "bbDelta": 25,
       "bbEnd": 30,
       "bbStart": 5,
       "qualifier": "POOR",
+      "sleepEnd": "09:29",
       "sleepScore": 42,
-      "sleepSeconds": 22380
+      "sleepSeconds": 22380,
+      "sleepStart": "03:12"
     },
     "2026-08-31": {
       "bbDelta": 47,
       "bbEnd": 51,
       "bbStart": 5,
       "qualifier": "FAIR",
+      "sleepEnd": "09:54",
       "sleepScore": 64,
-      "sleepSeconds": 26640
+      "sleepSeconds": 26640,
+      "sleepStart": "02:22"
     },
     "2026-09-01": {
       "bbDelta": 27,
       "bbEnd": 32,
       "bbStart": 5,
       "qualifier": "POOR",
+      "sleepEnd": "10:00",
       "sleepScore": 54,
-      "sleepSeconds": 23931
+      "sleepSeconds": 23931,
+      "sleepStart": "03:13"
     },
     "2026-09-02": {
       "bbDelta": 51,
       "bbEnd": 56,
       "bbStart": 5,
       "qualifier": "FAIR",
+      "sleepEnd": "10:50",
       "sleepScore": 64,
-      "sleepSeconds": 29991
+      "sleepSeconds": 29991,
+      "sleepStart": "02:28"
     },
     "2026-09-03": {
       "bbDelta": 18,
       "bbEnd": 60,
       "bbStart": 41,
       "qualifier": "POOR",
+      "sleepEnd": "08:47",
       "sleepScore": 51,
-      "sleepSeconds": 22192
+      "sleepSeconds": 22192,
+      "sleepStart": "02:31"
     },
     "2026-09-04": {
       "bbDelta": 24,
       "bbEnd": 29,
       "bbStart": 5,
       "qualifier": "POOR",
+      "sleepEnd": "09:56",
       "sleepScore": 57,
-      "sleepSeconds": 25354
+      "sleepSeconds": 25354,
+      "sleepStart": "02:36"
     },
     "2026-09-05": {
       "bbDelta": 24,
       "bbEnd": 29,
       "bbStart": 5,
       "qualifier": "FAIR",
+      "sleepEnd": "09:48",
       "sleepScore": 62,
-      "sleepSeconds": 23100
+      "sleepSeconds": 23100,
+      "sleepStart": "03:18"
     },
     "2026-09-06": {
       "bbDelta": 34,
       "bbEnd": 40,
       "bbStart": 5,
       "qualifier": "FAIR",
+      "sleepEnd": "09:56",
       "sleepScore": 71,
-      "sleepSeconds": 25140
+      "sleepSeconds": 25140,
+      "sleepStart": "02:56"
     },
     "2026-09-07": {
       "bbDelta": 27,
       "bbEnd": 32,
       "bbStart": 5,
       "qualifier": "POOR",
+      "sleepEnd": "08:05",
       "sleepScore": 52,
-      "sleepSeconds": 20200
+      "sleepSeconds": 20200,
+      "sleepStart": "02:22"
     },
     "2026-09-08": {
       "bbDelta": 49,
       "bbEnd": 74,
       "bbStart": 25,
       "qualifier": "FAIR",
+      "sleepEnd": "08:50",
       "sleepScore": 77,
-      "sleepSeconds": 25680
+      "sleepSeconds": 25680,
+      "sleepStart": "01:41"
     },
     "2026-09-09": {
       "bbDelta": 31,
       "bbEnd": 37,
       "bbStart": 6,
       "qualifier": "POOR",
+      "sleepEnd": "09:03",
       "sleepScore": 55,
-      "sleepSeconds": 25020
+      "sleepSeconds": 25020,
+      "sleepStart": "01:44"
     },
     "2026-09-10": {
       "bbDelta": 57,
       "bbEnd": 63,
       "bbStart": 6,
       "qualifier": "GOOD",
+      "sleepEnd": "09:03",
       "sleepScore": 80,
-      "sleepSeconds": 27539
+      "sleepSeconds": 27539,
+      "sleepStart": "01:13"
     }
   },
-  "generatedAt": "2026-09-10T13:23:48+00:00"
+  "generatedAt": "2026-09-10T14:06:39+00:00"
 }
