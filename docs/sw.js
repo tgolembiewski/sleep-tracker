@@ -1,4 +1,4 @@
-const CACHE = 'sen-tracker-v6';
+const CACHE = 'sen-tracker-v7';
 
 const SHELL = [
   './',
@@ -14,7 +14,13 @@ const SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      // addAll goes through the HTTP cache, which can quietly install the very
+      // files this update is meant to replace. Force each one from the network.
+      .then((cache) => cache.addAll(
+        SHELL.map((url) => new Request(url, { cache: 'reload' }))
+      ))
+      .then(() => self.skipWaiting())
   );
 });
 

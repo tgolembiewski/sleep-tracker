@@ -1090,8 +1090,32 @@ passGate().then(() => {
 });
 
 if ('serviceWorker' in navigator) {
+  // True on every launch except the very first, when there is nothing to
+  // replace and a reload would be pointless.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloading = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // A new worker has taken over and its cache already holds the new files,
+    // but this page is still showing the old ones. Claiming control does not
+    // reload anything on its own, so without this the app can sit on an old
+    // version indefinitely — an installed PWA is resumed far more often than
+    // it is genuinely reopened.
+    if (!hadController || reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((error) => {
+    navigator.serviceWorker.register('./sw.js').then((registration) => {
+      // An installed app can sit suspended for days without ever asking
+      // whether sw.js changed; check whenever it comes back to the front.
+      const checkForUpdate = () => {
+        if (!document.hidden) registration.update().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', checkForUpdate);
+      window.addEventListener('focus', checkForUpdate);
+    }).catch((error) => {
       console.warn('Service worker nie wystartował', error);
     });
   });

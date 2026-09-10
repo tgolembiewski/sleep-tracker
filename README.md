@@ -152,6 +152,25 @@ by anyone who requests those URLs directly. Protecting the numbers themselves
 would mean encrypting the data files, or moving to a host that enforces
 authentication server-side.
 
+## How updates reach an installed app
+
+Three things have to line up, and each one is handled explicitly:
+
+1. The browser only notices a new release when it re-fetches `sw.js`. An
+   installed app can stay suspended for days without asking, so the page calls
+   `registration.update()` whenever it comes back to the foreground.
+2. `cache.addAll` fetches through the HTTP cache, which can install the very
+   files the update replaces. The install step requests each shell file with
+   `cache: 'reload'` instead.
+3. A new worker calling `clients.claim()` takes control but does **not** reload
+   anything — the open page keeps showing the files it already loaded. The app
+   listens for `controllerchange` and reloads once, so the new version appears
+   without the app having to be force-quit. It skips that reload on the first
+   ever install, where there is nothing to replace.
+
+Bump `CACHE` in `docs/sw.js` on any release that changes the shell; the old
+cache is deleted on activate.
+
 ## Things worth knowing
 
 - On a phone the grid holds all 28 days at a fixed 66 px per column and scrolls
