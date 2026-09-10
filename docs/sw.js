@@ -1,4 +1,4 @@
-const CACHE = 'sen-tracker-v8';
+const CACHE = 'sen-tracker-v9';
 
 const SHELL = [
   './',

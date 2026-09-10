@@ -188,6 +188,11 @@ cache is deleted on activate.
 
 ## Things worth knowing
 
+- The habit tick is an inline SVG, not the character `✔`. U+2714 defaults to
+  emoji presentation on iOS, and a colour-emoji glyph ignores CSS `color`, so
+  the ticks rendered grey on iPhone while Android picked the text glyph and
+  showed them green.
+
 - On a phone the grid holds all 28 days at a fixed 66 px per column and scrolls
   sideways with the habit names pinned; `T1`–`T4` and `Dziś` jump to a week, and
   those jumps are measured from the DOM rather than computed as

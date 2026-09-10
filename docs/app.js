@@ -273,6 +273,13 @@ function renderWeekbar() {
   }
 }
 
+/* U+2714 defaults to emoji presentation on iOS, and a colour-emoji glyph
+   ignores CSS `color` — the ticks came out grey on iPhone and green on
+   Android. Drawing the mark removes the font from the question entirely. */
+const CHECK_SVG = '<svg class="tick-svg" viewBox="0 0 16 16" aria-hidden="true">'
+  + '<path d="M2.6 8.4 6.2 12l7.2-8" fill="none" stroke="currentColor"'
+  + ' stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 function headCell(tag, text, className) {
   const cell = document.createElement(tag);
   cell.textContent = text;
@@ -342,7 +349,9 @@ function renderGrid() {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'cell';
-        button.innerHTML = `<span class="check${on ? '' : ' off'}">${on ? '✔' : '·'}</span>`;
+        button.innerHTML = on
+          ? `<span class="check">${CHECK_SVG}</span>`
+          : '<span class="check off">·</span>';
         button.setAttribute('aria-label', `${habit.name}, ${longDate(date)}`);
         button.setAttribute('aria-pressed', String(on));
         button.addEventListener('click', () => toggleHabit(date, habit.id));
@@ -1036,7 +1045,7 @@ function buildPrintSheet(withData) {
         live ? '' : 'off',
         index % 7 === 0 && index > 0 ? 'weekstart' : '',
       ].filter(Boolean).join(' ');
-      printCell(row, classes, on ? '<span class="tick">✔</span>' : '');
+      printCell(row, classes, on ? `<span class="tick">${CHECK_SVG}</span>` : '');
     });
     body.appendChild(row);
   });
@@ -1098,7 +1107,7 @@ function buildPrintSheet(withData) {
 
   const howto = document.createElement('p');
   howto.className = 'howto';
-  howto.innerHTML = '<b>Jak używać:</b> zaznacz „✔” gdy nawyk zrobiony · <b>szare pola</b> = tego '
+  howto.innerHTML = '<b>Jak używać:</b> zaznacz „✔︎” gdy nawyk zrobiony · <b>szare pola</b> = tego '
     + 'nawyku jeszcze nie śledzisz (dochodzi w danym tygodniu wg planu) · w wierszu '
     + '<b>Energia rano</b> wpisz liczbę <b>1–5</b> (1 = wyczerpany, 5 = w pełni wypoczęty) · '
     + '<b>zasada „nigdy dwa razy z rzędu”</b>: jeden opuszczony dzień to wypadek, dwóch z rzędu '

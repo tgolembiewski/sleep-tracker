@@ -303,8 +303,10 @@ tr.section-start td { border-top: 2px solid var(--rule-strong); }
 
 .cell:disabled { cursor: default; }
 
-.check { font-size: 17px; color: var(--good); font-weight: 700; }
-.check.off { color: var(--ink-faint); opacity: .25; font-weight: 400; }
+.check { color: var(--good); display: grid; place-items: center; }
+.check.off { color: var(--ink-faint); opacity: .25; font-size: 15px; }
+
+.tick-svg { width: 18px; height: 18px; display: block; }
 
 .value { font-weight: 600; font-variant-numeric: tabular-nums; }
 .value.auto { font-weight: 400; opacity: .72; }
@@ -696,7 +698,8 @@ textarea { min-height: 130px; resize: vertical; }
   table.psheet tr.sum .lab { font-weight: 700; }
   table.psheet tr.first-sum td, table.psheet tr.first-sum .lab { border-top: 1pt solid #2f5496; }
 
-  table.psheet .tick { font-size: 10pt; font-weight: 700; }
+  table.psheet .tick { display: inline-block; color: #2f5496; }
+  table.psheet .tick .tick-svg { width: 11pt; height: 11pt; }
   table.psheet .num { font-size: 9pt; font-weight: 700; font-variant-numeric: tabular-nums; }
 
   table.psheet tr.pnotes td { height: 32mm; vertical-align: bottom; }
