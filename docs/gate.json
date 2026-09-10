@@ -1,0 +1,6 @@
+{
+  "algorithm": "PBKDF2-HMAC-SHA256",
+  "iterations": 310000,
+  "salt": "XLq62u+8x8zX4pk+spAQrg==",
+  "hash": "EvFzBebLrZVdPB/94BMvcfsycaXVdW8IkcbXm8r17vc="
+}
