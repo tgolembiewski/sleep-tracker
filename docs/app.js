@@ -280,6 +280,21 @@ const CHECK_SVG = '<svg class="tick-svg" viewBox="0 0 16 16" aria-hidden="true">
   + '<path d="M2.6 8.4 6.2 12l7.2-8" fill="none" stroke="currentColor"'
   + ' stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+const CROSS_SVG = '<svg class="tick-svg" viewBox="0 0 16 16" aria-hidden="true">'
+  + '<path d="M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8" fill="none" stroke="currentColor"'
+  + ' stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+/* A habit cell holds one of three states, and the difference matters:
+   undefined is "not filled in", false is "deliberately missed". */
+const DONE = true;
+const MISSED = false;
+
+function habitState(date, habitId) {
+  const record = dayRecord(date, false);
+  if (!record || !record.checks) return undefined;
+  return record.checks[habitId];
+}
+
 function headCell(tag, text, className) {
   const cell = document.createElement(tag);
   cell.textContent = text;
@@ -344,16 +359,23 @@ function renderGrid() {
       cell.className = `day${active ? '' : ' inactive'}${date === today ? ' today' : ''}`
         + `${date > today ? ' future' : ''}${starts ? ' weekstart' : ''}`;
       if (active) {
-        const record = dayRecord(date, false);
-        const on = Boolean(record && record.checks && record.checks[habit.id]);
+        const mark = habitState(date, habit.id);
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'cell';
-        button.innerHTML = on
-          ? `<span class="check">${CHECK_SVG}</span>`
-          : '<span class="check off">·</span>';
-        button.setAttribute('aria-label', `${habit.name}, ${longDate(date)}`);
-        button.setAttribute('aria-pressed', String(on));
+
+        if (mark === DONE) {
+          button.innerHTML = `<span class="check">${CHECK_SVG}</span>`;
+        } else if (mark === MISSED) {
+          button.innerHTML = `<span class="check miss">${CROSS_SVG}</span>`;
+        } else {
+          button.innerHTML = '<span class="check off">·</span>';
+        }
+
+        // aria-pressed cannot describe three states, so say it plainly.
+        const said = mark === DONE ? 'zrobione'
+          : mark === MISSED ? 'nie zrobione' : 'brak wpisu';
+        button.setAttribute('aria-label', `${habit.name}, ${longDate(date)}: ${said}`);
         button.addEventListener('click', () => toggleHabit(date, habit.id));
         cell.appendChild(button);
       }
@@ -511,10 +533,15 @@ function render() {
 
 /* ---------------------------------------------------------------- editing */
 
+/* empty → done → missed → empty */
 function toggleHabit(date, habitId) {
   const record = dayRecord(date, true);
-  record.checks[habitId] = !record.checks[habitId];
-  if (!record.checks[habitId]) delete record.checks[habitId];
+  const current = record.checks[habitId];
+
+  if (current === undefined) record.checks[habitId] = DONE;
+  else if (current === DONE) record.checks[habitId] = MISSED;
+  else delete record.checks[habitId];
+
   save();
   render();
 }
@@ -1039,13 +1066,16 @@ function buildPrintSheet(withData) {
 
     dates.forEach((date, index) => {
       const live = weekOfDate(date) >= habit.startWeek;
-      const record = dayRecord(date, false);
-      const on = withData && live && record && record.checks && record.checks[habit.id];
+      const mark = withData && live ? habitState(date, habit.id) : undefined;
       const classes = [
         live ? '' : 'off',
         index % 7 === 0 && index > 0 ? 'weekstart' : '',
       ].filter(Boolean).join(' ');
-      printCell(row, classes, on ? `<span class="tick">${CHECK_SVG}</span>` : '');
+
+      let glyph = '';
+      if (mark === DONE) glyph = `<span class="tick">${CHECK_SVG}</span>`;
+      else if (mark === MISSED) glyph = `<span class="tick miss">${CROSS_SVG}</span>`;
+      printCell(row, classes, glyph);
     });
     body.appendChild(row);
   });
@@ -1107,7 +1137,8 @@ function buildPrintSheet(withData) {
 
   const howto = document.createElement('p');
   howto.className = 'howto';
-  howto.innerHTML = '<b>Jak używać:</b> zaznacz „✔︎” gdy nawyk zrobiony · <b>szare pola</b> = tego '
+  howto.innerHTML = '<b>Jak używać:</b> „✔︎” = zrobione, „✘” = nie zrobione, puste pole = '
+    + 'brak wpisu · <b>szare pola</b> = tego '
     + 'nawyku jeszcze nie śledzisz (dochodzi w danym tygodniu wg planu) · w wierszu '
     + '<b>Energia rano</b> wpisz liczbę <b>1–5</b> (1 = wyczerpany, 5 = w pełni wypoczęty) · '
     + '<b>zasada „nigdy dwa razy z rzędu”</b>: jeden opuszczony dzień to wypadek, dwóch z rzędu '

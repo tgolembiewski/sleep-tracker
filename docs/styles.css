@@ -304,6 +304,7 @@ tr.section-start td { border-top: 2px solid var(--rule-strong); }
 .cell:disabled { cursor: default; }
 
 .check { color: var(--good); display: grid; place-items: center; }
+.check.miss { color: var(--bad); }
 .check.off { color: var(--ink-faint); opacity: .25; font-size: 15px; }
 
 .tick-svg { width: 18px; height: 18px; display: block; }
@@ -699,6 +700,7 @@ textarea { min-height: 130px; resize: vertical; }
   table.psheet tr.first-sum td, table.psheet tr.first-sum .lab { border-top: 1pt solid #2f5496; }
 
   table.psheet .tick { display: inline-block; color: #2f5496; }
+  table.psheet .tick.miss { color: #bf4b45; }
   table.psheet .tick .tick-svg { width: 11pt; height: 11pt; }
   table.psheet .num { font-size: 9pt; font-weight: 700; font-variant-numeric: tabular-nums; }
 

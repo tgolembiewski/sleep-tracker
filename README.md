@@ -188,6 +188,10 @@ cache is deleted on activate.
 
 ## Things worth knowing
 
+- A habit cell cycles through three states: empty, a green tick for done, and a
+  red cross for deliberately missed. Empty and missed are stored differently —
+  the key is absent for "not filled in" and `false` for "missed" — so a blank
+  day is never mistaken for a broken streak.
 - The habit tick is an inline SVG, not the character `✔`. U+2714 defaults to
   emoji presentation on iOS, and a colour-emoji glyph ignores CSS `color`, so
   the ticks rendered grey on iPhone while Android picked the text glyph and
