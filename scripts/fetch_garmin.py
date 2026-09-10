@@ -138,6 +138,22 @@ def find_sleep_event_impact(events: Any) -> int | None:
     return found[0] if found else None
 
 
+def day_steps(client: Garmin, date: str) -> int | None:
+    """Steps walked on `date` itself — daytime activity, not part of the night.
+
+    A separate request from the sleep summary, so a failure here must not cost
+    us the sleep figures.
+    """
+    try:
+        stats = client.get_stats(date) or {}
+    except Exception as error:  # noqa: BLE001 - steps are a nice-to-have
+        print(f"  steps unavailable for {date}: {error}")
+        return None
+
+    steps = stats.get("totalSteps")
+    return int(steps) if isinstance(steps, (int, float)) else None
+
+
 def collect_day(client: Garmin, date: str) -> dict[str, Any] | None:
     sleep = sleep_summary(client, date)
     bb_delta = sleep["bb_delta"]
@@ -148,10 +164,14 @@ def collect_day(client: Garmin, date: str) -> dict[str, Any] | None:
         except Exception as error:  # noqa: BLE001 - fallback endpoint is optional
             print(f"  body battery events unavailable for {date}: {error}")
 
-    if sleep["score"] is None and bb_delta is None:
+    steps = day_steps(client, date)
+
+    if sleep["score"] is None and bb_delta is None and steps is None:
         return None
 
     record: dict[str, Any] = {"sleepScore": sleep["score"], "bbDelta": bb_delta}
+    if steps is not None:
+        record["steps"] = steps
     if sleep["bb_start"] is not None and sleep["bb_end"] is not None:
         record["bbStart"] = sleep["bb_start"]
         record["bbEnd"] = sleep["bb_end"]
@@ -264,12 +284,13 @@ def main() -> int:
         if data["days"].get(date) != record:
             data["days"][date] = record
             changed += 1
-        print(
-            f"{date}: sleep score {record['sleepScore']}, "
+        battery = (
             f"body battery {record['bbDelta']:+d}"
             if record["bbDelta"] is not None
-            else f"{date}: sleep score {record['sleepScore']}, body battery unknown"
+            else "body battery unknown"
         )
+        walked = f", {record['steps']} steps" if record.get("steps") is not None else ""
+        print(f"{date}: sleep score {record['sleepScore']}, {battery}{walked}")
 
         if index < len(dates) - 1:
             time.sleep(1)  # stay well under Garmin's rate limit

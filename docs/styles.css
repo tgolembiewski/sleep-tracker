@@ -318,6 +318,7 @@ tr.section-start td { border-top: 2px solid var(--rule-strong); }
 .value.e3 { color: var(--ok); }
 .value.e4, .value.e5 { color: var(--good); }
 .value.pos { color: var(--good); }
+.value.steps { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
 .value.neg { color: var(--bad); }
 
 .hours {

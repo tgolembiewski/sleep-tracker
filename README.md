@@ -129,12 +129,17 @@ window that ended in the past, `--output PATH` to write elsewhere.
       "bbEnd": 65,
       "sleepStart": "23:13",
       "sleepEnd": "07:02",
+      "steps": 10873,
       "qualifier": "GOOD",
       "sleepSeconds": 27000
     }
   }
 }
 ```
+
+`steps` is the one field that describes the day itself rather than the night
+before it — it costs a second request per day, and a failure there is caught so
+it cannot take the sleep figures down with it.
 
 Days are keyed by the morning you woke up, matching how Garmin Connect files a
 night, and matching the column you would tick on the paper sheet.

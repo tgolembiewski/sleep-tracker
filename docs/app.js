@@ -423,6 +423,17 @@ function renderGrid() {
     };
   }, false, true));
 
+  body.appendChild(summaryRow('Kroki', dates, today, (date) => {
+    const auto = garminFor(date);
+    const steps = auto && auto.steps !== undefined && auto.steps !== null ? auto.steps : null;
+    return {
+      html: steps === null
+        ? '<span class="value empty">·</span>'
+        // A thin space groups the thousands without widening the column much.
+        : `<span class="value steps">${String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009')}</span>`,
+    };
+  }, false, true));
+
   body.appendChild(summaryRow('Notatka dnia', dates, today, (date) => {
     const record = dayRecord(date, false);
     const filled = Boolean(record && record.note && record.note.trim());
