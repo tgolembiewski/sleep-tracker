@@ -7,12 +7,14 @@ const MONTHS = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
                 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
 
 const DEFAULT_HABITS = [
-  { name: 'Stała pora wstawania', startWeek: 1 },
-  { name: 'Poranne światło (5–10 min)', startWeek: 2 },
-  { name: 'Kofeina tylko do ~14:00', startWeek: 3 },
-  { name: 'Wyciszenie 30 min przed snem', startWeek: 3 },
-  { name: 'Bez ekranów w łóżku', startWeek: 4 },
+  { id: 'wstawanie', name: 'Stała pora wstawania', startWeek: 1 },
+  { id: 'swiatlo', name: 'Poranne światło (5–10 min)', startWeek: 2 },
+  { id: 'kofeina', name: 'Kofeina tylko do ~14:00', startWeek: 3 },
+  { id: 'wyciszenie', name: 'Wyciszenie 30 min przed snem', startWeek: 3 },
+  { id: 'ekrany', name: 'Bez ekranów w łóżku', startWeek: 4 },
 ];
+
+const SEED_URL = './seed.json';
 
 /* ------------------------------------------------------------------ dates */
 
@@ -52,7 +54,7 @@ function newCycle(startDate) {
     id: makeId(),
     startDate,
     createdAt: new Date().toISOString(),
-    habits: DEFAULT_HABITS.map((habit) => ({ id: makeId(), ...habit })),
+    habits: DEFAULT_HABITS.map((habit) => ({ ...habit })),
     days: {},
   };
 }
@@ -74,7 +76,7 @@ function loadState() {
   } catch (error) {
     console.warn('localStorage niedostępny', error);
   }
-  if (!stored) return defaultState();
+  if (!stored) return null;
 
   try {
     const parsed = JSON.parse(stored);
@@ -87,9 +89,18 @@ function loadState() {
   }
 }
 
-let state = loadState();
+let state = loadState() || defaultState();
+const freshInstall = !localStorageHasState();
 let garmin = { generatedAt: null, days: {} };
 let activeWeek = 1;
+
+function localStorageHasState() {
+  try {
+    return Boolean(localStorage.getItem(STORAGE_KEY));
+  } catch (error) {
+    return false;
+  }
+}
 
 function save() {
   try {
@@ -523,6 +534,9 @@ function openSettings() {
       <input type="date" id="cyclestart" value="${current.startDate}">
     </div>
     <button class="btn" type="button" data-action="new-cycle">Rozpocznij nowy cykl (28 dni)</button>
+    <button class="btn" type="button" data-action="import-seed" style="margin-top:8px">Wczytaj arkusz startowy</button>
+    <p class="hint">Uzupełnia puste pola danymi z papierowego arkusza. Twoje własne
+    wpisy zostają nietknięte, więc można to zrobić wielokrotnie.</p>
 
     <h3>Nawyki</h3>
     <div class="habit-editor" id="habits"></div>
@@ -599,6 +613,11 @@ function openSettings() {
     closeSheet();
     render();
     toast('Nowy cykl rozpoczęty');
+  });
+
+  sheet.querySelector('[data-action="import-seed"]').addEventListener('click', async () => {
+    await importSeed(true);
+    closeSheet();
   });
 
   sheet.querySelector('[data-action="close"]').addEventListener('click', closeSheet);
@@ -678,6 +697,62 @@ function renderCycleList() {
   });
 }
 
+/* -------------------------------------------------------------- seed sheet */
+
+async function fetchSeed() {
+  const response = await fetch(`${SEED_URL}?t=${Date.now()}`, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+/* Fills in whatever the current cycle does not already have. Anything you have
+   already entered on this device wins, so importing twice is harmless. */
+function applySeed(seed) {
+  const current = cycle();
+  if (seed.startDate) current.startDate = seed.startDate;
+
+  const known = new Map(current.habits.map((habit) => [habit.id, habit]));
+  (seed.habits || []).forEach((habit) => {
+    if (!known.has(habit.id)) current.habits.push({ ...habit });
+  });
+
+  let filled = 0;
+  Object.entries(seed.days || {}).forEach(([date, entry]) => {
+    const record = dayRecord(date, true);
+
+    (entry.checks || []).forEach((habitId) => {
+      if (record.checks[habitId] === undefined) {
+        record.checks[habitId] = true;
+        filled += 1;
+      }
+    });
+
+    for (const key of ['energy', 'note', 'sleepScore', 'bbDelta']) {
+      if (entry[key] !== undefined && entry[key] !== null && record[key] === undefined) {
+        record[key] = entry[key];
+        filled += 1;
+      }
+    }
+  });
+
+  save();
+  pickInitialWeek();
+  render();
+  return filled;
+}
+
+async function importSeed(announce) {
+  try {
+    const filled = applySeed(await fetchSeed());
+    if (announce) {
+      toast(filled ? `Wczytano ${filled} wpisów z arkusza` : 'Brak nowych wpisów w arkuszu');
+    }
+  } catch (error) {
+    console.warn('Nie udało się wczytać seed.json', error);
+    if (announce) toast('Nie udało się wczytać arkusza');
+  }
+}
+
 /* ------------------------------------------------------------ garmin data */
 
 async function loadGarmin(announce) {
@@ -732,6 +807,7 @@ loadCachedGarmin();
 pickInitialWeek();
 save();
 render();
+if (freshInstall) importSeed(false);
 loadGarmin(false);
 
 if ('serviceWorker' in navigator) {

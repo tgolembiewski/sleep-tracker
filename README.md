@@ -14,6 +14,12 @@ nothing that has to stay switched on at home:
 | `.github/workflows/garmin-sync.yml` | Runs that script three times each morning and commits the result |
 | `docs/` | The installable web app, served by GitHub Pages |
 
+`docs/seed.json` carries the entries transcribed from the paper sheet. A device
+opening the app for the first time loads it automatically; on a device that
+already has data, **⚙ → Wczytaj arkusz startowy** imports it. The import only
+fills blanks, so anything already entered on that device is never overwritten
+and running it twice changes nothing.
+
 Habit checkmarks, morning energy ratings and daily notes live in the browser's
 `localStorage` on each device. The Garmin numbers arrive over the network and
 are cached for offline use. A value you type by hand always wins and is never

@@ -1,4 +1,4 @@
-const CACHE = 'sen-tracker-v1';
+const CACHE = 'sen-tracker-v2';
 
 const SHELL = [
   './',
@@ -31,8 +31,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Garmin data must never be served stale from cache while the network works.
-  if (url.pathname.endsWith('data.json')) {
+  // Garmin data and the starting sheet must never be served stale from cache
+  // while the network works.
+  if (url.pathname.endsWith('data.json') || url.pathname.endsWith('seed.json')) {
     event.respondWith(
       fetch(request)
         .then((response) => {

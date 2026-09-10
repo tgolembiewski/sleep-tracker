@@ -1,0 +1,52 @@
+{
+  "startDate": "2026-09-03",
+  "habits": [
+    { "id": "wstawanie", "name": "Stała pora wstawania", "startWeek": 1 },
+    { "id": "swiatlo", "name": "Poranne światło (5–10 min)", "startWeek": 2 },
+    { "id": "kofeina", "name": "Kofeina tylko do ~14:00", "startWeek": 3 },
+    { "id": "wyciszenie", "name": "Wyciszenie 30 min przed snem", "startWeek": 3 },
+    { "id": "ekrany", "name": "Bez ekranów w łóżku", "startWeek": 4 }
+  ],
+  "days": {
+    "2026-09-03": {
+      "checks": ["wstawanie"],
+      "energy": 2,
+      "note": "pobudka 7.30"
+    },
+    "2026-09-04": {
+      "checks": [],
+      "energy": 3,
+      "note": "2.36 / 9.56"
+    },
+    "2026-09-05": {
+      "checks": [],
+      "energy": 3,
+      "note": "3.18 | 9.48"
+    },
+    "2026-09-06": {
+      "checks": [],
+      "energy": 3,
+      "note": "MELISA wieczór\n2.56 / 9.56"
+    },
+    "2026-09-07": {
+      "checks": ["wstawanie"],
+      "energy": 2,
+      "note": "8.20 | melisa / epsom"
+    },
+    "2026-09-08": {
+      "checks": ["wstawanie"],
+      "energy": 3,
+      "note": "MELISA\n1.41 | 8.50"
+    },
+    "2026-09-09": {
+      "checks": ["wstawanie"],
+      "energy": 2,
+      "note": "MELISA"
+    },
+    "2026-09-10": {
+      "checks": ["wstawanie", "swiatlo"],
+      "energy": 2,
+      "note": "ból głowy hist. wieczór / IBUM na noc"
+    }
+  }
+}
