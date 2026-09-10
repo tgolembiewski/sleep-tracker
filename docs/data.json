@@ -8,7 +8,8 @@
       "sleepEnd": "07:55",
       "sleepScore": 53,
       "sleepSeconds": 18900,
-      "sleepStart": "02:40"
+      "sleepStart": "02:40",
+      "steps": 1114
     },
     "2026-08-29": {
       "bbDelta": 43,
@@ -18,7 +19,8 @@
       "sleepEnd": "09:25",
       "sleepScore": 70,
       "sleepSeconds": 23460,
-      "sleepStart": "02:53"
+      "sleepStart": "02:53",
+      "steps": 8732
     },
     "2026-08-30": {
       "bbDelta": 25,
@@ -28,7 +30,8 @@
       "sleepEnd": "09:29",
       "sleepScore": 42,
       "sleepSeconds": 22380,
-      "sleepStart": "03:12"
+      "sleepStart": "03:12",
+      "steps": 2913
     },
     "2026-08-31": {
       "bbDelta": 47,
@@ -38,7 +41,8 @@
       "sleepEnd": "09:54",
       "sleepScore": 64,
       "sleepSeconds": 26640,
-      "sleepStart": "02:22"
+      "sleepStart": "02:22",
+      "steps": 5142
     },
     "2026-09-01": {
       "bbDelta": 27,
@@ -48,7 +52,8 @@
       "sleepEnd": "10:00",
       "sleepScore": 54,
       "sleepSeconds": 23931,
-      "sleepStart": "03:13"
+      "sleepStart": "03:13",
+      "steps": 9085
     },
     "2026-09-02": {
       "bbDelta": 51,
@@ -58,7 +63,8 @@
       "sleepEnd": "10:50",
       "sleepScore": 64,
       "sleepSeconds": 29991,
-      "sleepStart": "02:28"
+      "sleepStart": "02:28",
+      "steps": 9412
     },
     "2026-09-03": {
       "bbDelta": 18,
@@ -68,7 +74,8 @@
       "sleepEnd": "08:47",
       "sleepScore": 51,
       "sleepSeconds": 22192,
-      "sleepStart": "02:31"
+      "sleepStart": "02:31",
+      "steps": 10524
     },
     "2026-09-04": {
       "bbDelta": 24,
@@ -78,7 +85,8 @@
       "sleepEnd": "09:56",
       "sleepScore": 57,
       "sleepSeconds": 25354,
-      "sleepStart": "02:36"
+      "sleepStart": "02:36",
+      "steps": 8505
     },
     "2026-09-05": {
       "bbDelta": 24,
@@ -88,7 +96,8 @@
       "sleepEnd": "09:48",
       "sleepScore": 62,
       "sleepSeconds": 23100,
-      "sleepStart": "03:18"
+      "sleepStart": "03:18",
+      "steps": 7662
     },
     "2026-09-06": {
       "bbDelta": 34,
@@ -98,7 +107,8 @@
       "sleepEnd": "09:56",
       "sleepScore": 71,
       "sleepSeconds": 25140,
-      "sleepStart": "02:56"
+      "sleepStart": "02:56",
+      "steps": 5477
     },
     "2026-09-07": {
       "bbDelta": 27,
@@ -108,7 +118,8 @@
       "sleepEnd": "08:05",
       "sleepScore": 52,
       "sleepSeconds": 20200,
-      "sleepStart": "02:22"
+      "sleepStart": "02:22",
+      "steps": 3982
     },
     "2026-09-08": {
       "bbDelta": 49,
@@ -118,7 +129,8 @@
       "sleepEnd": "08:50",
       "sleepScore": 77,
       "sleepSeconds": 25680,
-      "sleepStart": "01:41"
+      "sleepStart": "01:41",
+      "steps": 7509
     },
     "2026-09-09": {
       "bbDelta": 31,
@@ -128,7 +140,8 @@
       "sleepEnd": "09:03",
       "sleepScore": 55,
       "sleepSeconds": 25020,
-      "sleepStart": "01:44"
+      "sleepStart": "01:44",
+      "steps": 8123
     },
     "2026-09-10": {
       "bbDelta": 57,
@@ -138,8 +151,9 @@
       "sleepEnd": "09:03",
       "sleepScore": 80,
       "sleepSeconds": 27539,
-      "sleepStart": "01:13"
+      "sleepStart": "01:13",
+      "steps": 10873
     }
   },
-  "generatedAt": "2026-09-10T14:06:39+00:00"
+  "generatedAt": "2026-09-10T23:27:12+00:00"
 }
