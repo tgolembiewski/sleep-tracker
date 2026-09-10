@@ -1,4 +1,4 @@
-const CACHE = 'sen-tracker-v2';
+const CACHE = 'sen-tracker-v4';
 
 const SHELL = [
   './',
@@ -6,6 +6,7 @@ const SHELL = [
   './styles.css',
   './app.js',
   './manifest.webmanifest',
+  './gate.json',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

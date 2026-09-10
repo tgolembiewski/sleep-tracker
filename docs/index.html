@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl" data-theme="auto">
+<html lang="pl" data-theme="auto" data-locked>
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light dark">
@@ -68,6 +68,13 @@
     </div>
 
     <div class="card">
+      <h2>Sen: zaśnięcie / pobudka</h2>
+      Godziny zaśnięcia i pobudki prosto z Garmina — u góry zaśnięcie, pod spodem
+      pobudka. Wiersz jest tylko do odczytu; jeśli godziny wyglądają dziwnie,
+      zwykle znaczy to, że zegarek źle wykrył okno snu.
+    </div>
+
+    <div class="card">
       <h2>Body Battery — wpływ netto snu</h2>
       Przyrost w trakcie snu: poziom przy pobudce minus poziom przy zaśnięciu (np. +53).
       Często tłumaczy lepiej niż sam wynik snu, dlaczego czułeś się słabo mimo dobrej nocy.
@@ -81,6 +88,18 @@
     </div>
   </section>
 </main>
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gate-form">
+    <h1>Tracker nawyków snu</h1>
+    <p>Podaj hasło, aby otworzyć aplikację na tym urządzeniu.</p>
+    <input type="password" id="gate-input" autocomplete="current-password"
+           autocapitalize="off" autocorrect="off" spellcheck="false"
+           placeholder="Hasło" aria-label="Hasło">
+    <button class="btn primary" type="submit" id="gate-submit">Odblokuj</button>
+    <p class="gate-error" id="gate-error" hidden>Nieprawidłowe hasło</p>
+  </form>
+</div>
 
 <div class="overlay" id="overlay" hidden>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>

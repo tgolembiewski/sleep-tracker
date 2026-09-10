@@ -39,6 +39,15 @@ def dig(source: Any, *path: str) -> Any:
     return current
 
 
+def clock(local_ms: Any) -> str | None:
+    """Garmin's *Local timestamps are epochs pre-shifted to the wearer's zone,
+    so reading them as UTC yields the wall-clock time shown on the watch."""
+    if not isinstance(local_ms, (int, float)):
+        return None
+    moment = dt.datetime.fromtimestamp(local_ms / 1000, dt.timezone.utc)
+    return moment.strftime("%H:%M")
+
+
 def connect() -> Garmin:
     tokens = os.environ.get("GARMIN_TOKENS", "").strip()
     client = Garmin()
@@ -92,6 +101,8 @@ def sleep_summary(client: Garmin, date: str) -> dict[str, Any]:
         "score": score,
         "qualifier": dig(daily, "sleepScores", "overall", "qualifierKey"),
         "duration_s": daily.get("sleepTimeSeconds"),
+        "sleep_start": clock(daily.get("sleepStartTimestampLocal")),
+        "sleep_end": clock(daily.get("sleepEndTimestampLocal")),
         "bb_start": bb_start,
         "bb_end": bb_end,
         "bb_delta": bb_delta,
@@ -144,6 +155,9 @@ def collect_day(client: Garmin, date: str) -> dict[str, Any] | None:
     if sleep["bb_start"] is not None and sleep["bb_end"] is not None:
         record["bbStart"] = sleep["bb_start"]
         record["bbEnd"] = sleep["bb_end"]
+    if sleep["sleep_start"] and sleep["sleep_end"]:
+        record["sleepStart"] = sleep["sleep_start"]
+        record["sleepEnd"] = sleep["sleep_end"]
     if sleep["qualifier"]:
         record["qualifier"] = sleep["qualifier"]
     if sleep["duration_s"]:

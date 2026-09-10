@@ -15,6 +15,9 @@ const DEFAULT_HABITS = [
 ];
 
 const SEED_URL = './seed.json';
+const GATE_URL = './gate.json';
+const UNLOCK_KEY = `${STORAGE_KEY}.unlocked`;
+const GATE_CACHE_KEY = `${STORAGE_KEY}.gate`;
 
 /* ------------------------------------------------------------------ dates */
 
@@ -304,6 +307,16 @@ function renderGrid() {
     };
   }));
 
+  body.appendChild(summaryRow('Sen: zaśnięcie / pobudka', dates, today, (date) => {
+    const auto = garminFor(date);
+    if (!auto || !auto.sleepStart || !auto.sleepEnd) {
+      return { html: '<span class="value empty">·</span>' };
+    }
+    return {
+      html: `<span class="hours"><b>${auto.sleepStart}</b>${auto.sleepEnd}</span>`,
+    };
+  }, false, true));
+
   body.appendChild(summaryRow('Notatka dnia', dates, today, (date) => {
     const record = dayRecord(date, false);
     const filled = Boolean(record && record.note && record.note.trim());
@@ -316,7 +329,7 @@ function renderGrid() {
   table.appendChild(body);
 }
 
-function summaryRow(title, dates, today, build, sectionStart) {
+function summaryRow(title, dates, today, build, sectionStart, readOnly) {
   const row = document.createElement('tr');
   row.className = `summary${sectionStart ? ' section-start' : ''}`;
   const head = document.createElement('td');
@@ -328,13 +341,22 @@ function summaryRow(title, dates, today, build, sectionStart) {
     const cell = document.createElement('td');
     cell.className = `day${date === today ? ' today' : ''}${date > today ? ' future' : ''}`;
     const spec = build(date);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'cell';
-    button.innerHTML = spec.html || `<span class="value ${spec.className}">${spec.text}</span>`;
-    button.setAttribute('aria-label', `${title}, ${longDate(date)}`);
-    button.addEventListener('click', spec.onClick);
-    cell.appendChild(button);
+    const body = spec.html || `<span class="value ${spec.className}">${spec.text}</span>`;
+
+    if (readOnly) {
+      const box = document.createElement('div');
+      box.className = 'cell';
+      box.innerHTML = body;
+      cell.appendChild(box);
+    } else {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cell';
+      button.innerHTML = body;
+      button.setAttribute('aria-label', `${title}, ${longDate(date)}`);
+      button.addEventListener('click', spec.onClick);
+      cell.appendChild(button);
+    }
     row.appendChild(cell);
   });
 
@@ -788,6 +810,123 @@ function loadCachedGarmin() {
   }
 }
 
+/* ------------------------------------------------------------------- gate */
+
+/* A passphrase screen, not a security boundary: this site is served from a
+   public repository, so data.json and seed.json remain readable by anyone who
+   requests those URLs. The gate keeps the app out of view on a shared device.
+   Protecting the numbers themselves would mean encrypting the data files. */
+
+function storedUnlock() {
+  try {
+    return localStorage.getItem(UNLOCK_KEY);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function loadGateConfig() {
+  try {
+    const response = await fetch(`${GATE_URL}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const config = await response.json();
+    try {
+      localStorage.setItem(GATE_CACHE_KEY, JSON.stringify(config));
+    } catch (error) {
+      console.warn('Nie udało się zapisać konfiguracji blokady', error);
+    }
+    return config;
+  } catch (error) {
+    // Offline, or the file is not published yet: fall back to the last copy.
+    try {
+      const cached = localStorage.getItem(GATE_CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (parseError) {
+      console.warn('Brak zapisanej konfiguracji blokady', parseError);
+    }
+    return null;
+  }
+}
+
+async function derivePasscode(passphrase, config) {
+  const encoder = new TextEncoder();
+  const salt = Uint8Array.from(atob(config.salt), (char) => char.charCodeAt(0));
+  const material = await crypto.subtle.importKey(
+    'raw', encoder.encode(passphrase), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: config.iterations, hash: 'SHA-256' },
+    material,
+    256
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+
+function askForPasscode(config) {
+  return new Promise((resolve) => {
+    const gate = document.getElementById('gate');
+    const form = document.getElementById('gate-form');
+    const input = document.getElementById('gate-input');
+    const error = document.getElementById('gate-error');
+    const submit = document.getElementById('gate-submit');
+
+    gate.hidden = false;
+    input.focus();
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!input.value) return;
+
+      submit.disabled = true;
+      submit.textContent = 'Sprawdzam…';
+      error.hidden = true;
+
+      let matches = false;
+      try {
+        matches = (await derivePasscode(input.value, config)) === config.hash;
+      } catch (failure) {
+        console.warn('Nie udało się sprawdzić hasła', failure);
+      }
+
+      submit.disabled = false;
+      submit.textContent = 'Odblokuj';
+
+      if (!matches) {
+        error.hidden = false;
+        input.value = '';
+        input.focus();
+        return;
+      }
+
+      try {
+        localStorage.setItem(UNLOCK_KEY, config.hash);
+      } catch (failure) {
+        console.warn('Nie udało się zapamiętać odblokowania', failure);
+      }
+      gate.hidden = true;
+      document.documentElement.removeAttribute('data-locked');
+      resolve();
+    });
+  });
+}
+
+async function passGate() {
+  const config = await loadGateConfig();
+
+  // No passphrase configured: nothing to ask for.
+  if (!config || !config.hash || !crypto.subtle) {
+    document.documentElement.removeAttribute('data-locked');
+    return;
+  }
+
+  if (storedUnlock() === config.hash) {
+    document.documentElement.removeAttribute('data-locked');
+    return;
+  }
+
+  await askForPasscode(config);
+}
+
 /* ------------------------------------------------------------------ start */
 
 function pickInitialWeek() {
@@ -803,12 +942,17 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) loadGarmin(false);
 });
 
-loadCachedGarmin();
-pickInitialWeek();
-save();
-render();
-if (freshInstall) importSeed(false);
-loadGarmin(false);
+// Hide the interface up front so it never flashes before the gate appears.
+if (storedUnlock()) document.documentElement.removeAttribute('data-locked');
+
+passGate().then(() => {
+  loadCachedGarmin();
+  pickInitialWeek();
+  save();
+  render();
+  if (freshInstall) importSeed(false);
+  loadGarmin(false);
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

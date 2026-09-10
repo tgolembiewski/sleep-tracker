@@ -127,6 +127,8 @@ window that ended in the past, `--output PATH` to write elsewhere.
       "bbDelta": 53,
       "bbStart": 12,
       "bbEnd": 65,
+      "sleepStart": "23:13",
+      "sleepEnd": "07:02",
       "qualifier": "GOOD",
       "sleepSeconds": 27000
     }
@@ -136,6 +138,19 @@ window that ended in the past, `--output PATH` to write elsewhere.
 
 Days are keyed by the morning you woke up, matching how Garmin Connect files a
 night, and matching the column you would tick on the paper sheet.
+
+## The unlock screen
+
+`scripts/set_passcode.py` asks for a passphrase and writes only a salted
+PBKDF2-SHA256 verifier to `docs/gate.json`; the passphrase itself is never
+stored. The app asks for it once per device and remembers it afterwards.
+Changing it re-locks every device.
+
+This hides the interface. It is **not** a security boundary: the site is served
+from a public repository, so `docs/data.json` and `docs/seed.json` stay readable
+by anyone who requests those URLs directly. Protecting the numbers themselves
+would mean encrypting the data files, or moving to a host that enforces
+authentication server-side.
 
 ## Things worth knowing
 
