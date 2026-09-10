@@ -613,3 +613,160 @@ textarea { min-height: 130px; resize: vertical; }
 }
 
 .gate-error[hidden] { display: none; }
+
+/* ---------- printable sheet ---------- */
+
+/* Built on demand and only ever shown to the printer. */
+.printsheet { display: none; }
+
+@media print {
+  @page { size: A4 landscape; margin: 9mm; }
+
+  html, body {
+    background: #fff;
+    color: #1f3864;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body > *:not(.printsheet) { display: none !important; }
+
+  .printsheet {
+    display: block;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .printsheet h1 {
+    margin: 0 0 2pt;
+    font-size: 17pt;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+
+  .printsheet .sub { margin: 0 0 7pt; font-size: 7.6pt; color: #4a5878; }
+
+  /* The screen layout hides things at wide viewports, and an A4 landscape page
+     is a wide viewport. Restate the display of everything inside the sheet so
+     no screen rule can collapse a row. */
+  .printsheet table.psheet { display: table; }
+  .printsheet thead { display: table-header-group; }
+  .printsheet tbody { display: table-row-group; }
+  .printsheet tr { display: table-row; }
+  .printsheet th, .printsheet td { display: table-cell; }
+
+  table.psheet {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 7.4pt;
+  }
+
+  table.psheet th, table.psheet td {
+    border: .4pt solid #9fb0cd;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  table.psheet .lab {
+    width: 41mm;
+    text-align: left;
+    padding: 2.6pt 4pt;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  table.psheet thead th {
+    background: #4a6699;
+    color: #fff;
+    font-weight: 600;
+    padding: 2.4pt 0;
+    border-color: #3c5488;
+  }
+
+  table.psheet thead .lab { color: #fff; font-weight: 600; }
+  table.psheet thead th.sun { color: #f0b429; }
+  table.psheet thead tr.nums th { font-size: 8pt; }
+
+  table.psheet tbody td { height: 8mm; }
+  table.psheet td.off { background: #dde3ef; }
+  table.psheet .weekstart { border-left: 1pt solid #2f5496; }
+
+  table.psheet tr.sum td, table.psheet tr.sum .lab { background: #fbf4dc; }
+  table.psheet tr.sum .lab { font-weight: 700; }
+  table.psheet tr.first-sum td, table.psheet tr.first-sum .lab { border-top: 1pt solid #2f5496; }
+
+  table.psheet .tick { font-size: 10pt; font-weight: 700; }
+  table.psheet .num { font-size: 9pt; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  table.psheet tr.pnotes td { height: 32mm; vertical-align: bottom; }
+  table.psheet tr.pnotes .lab { vertical-align: top; font-weight: 700; }
+  table.psheet tr.pnotes .lab small { display: block; font-weight: 400; font-size: 6.4pt; color: #4a5878; }
+
+  .vnote {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    display: block;
+    max-height: 30mm;
+    margin: 1mm auto;
+    font-size: 7pt;
+    line-height: 1.25;
+    text-align: left;
+    overflow: hidden;
+  }
+
+  .printsheet .howto {
+    margin: 5pt 0 0;
+    padding: 4.5pt 6pt;
+    border: .4pt solid #9fb0cd;
+    background: #eef2f9;
+    font-size: 7.4pt;
+    line-height: 1.45;
+  }
+
+  .printsheet h2 {
+    margin: 6pt 0 3pt;
+    font-size: 8.6pt;
+    font-weight: 700;
+  }
+
+  .printsheet .pscale {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5pt;
+    padding: 4pt 6pt;
+    border: .4pt solid #d8c98c;
+    background: #fdf9ec;
+  }
+
+  .printsheet .pscale div { text-align: center; }
+
+  .printsheet .badge {
+    display: inline-block;
+    width: 15pt;
+    height: 15pt;
+    line-height: 15pt;
+    border-radius: 2.5pt;
+    color: #fff;
+    font-weight: 700;
+    font-size: 9pt;
+  }
+
+  .printsheet .s1 { background: #bf4b45; }
+  .printsheet .s2 { background: #dd8f2b; }
+  .printsheet .s3 { background: #c8a318; }
+  .printsheet .s4 { background: #6aa84f; }
+  .printsheet .s5 { background: #4c8b3c; }
+
+  .printsheet .pscale b { display: block; margin-top: 2pt; font-size: 7.4pt; }
+  .printsheet .pscale span { display: block; font-size: 6.8pt; line-height: 1.3; color: #4a5878; }
+
+  .printsheet .fine {
+    margin: 3.5pt 0 0;
+    font-size: 6.9pt;
+    line-height: 1.45;
+    color: #40506f;
+  }
+
+  .printsheet .fine b { color: #1f3864; }
+}

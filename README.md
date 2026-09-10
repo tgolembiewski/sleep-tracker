@@ -139,6 +139,21 @@ window that ended in the past, `--output PATH` to write elsewhere.
 Days are keyed by the morning you woke up, matching how Garmin Connect files a
 night, and matching the column you would tick on the paper sheet.
 
+## Printing
+
+The printer button rebuilds the original paper sheet — one A4 landscape page,
+28 columns, the same rows and wording, grey cells for habits that have not
+started, and the day notes set vertically as on the original. It offers the
+sheet either filled in from your entries or blank to hang on the fridge.
+
+The layout is a print stylesheet rather than a screenshot of the app, so it
+does not matter which screen you print from. Two things it has to defend
+against: an A4 landscape page is about 1123 px wide, so the app's own
+`min-width: 900px` rules apply while printing — the printed rows restate their
+`display` and use their own class names for that reason. And the printable box
+is only ~726 px tall at 9 mm margins; the sheet is tuned to 707 px so it stays
+on one page.
+
 ## The unlock screen
 
 `scripts/set_passcode.py` asks for a passphrase and writes only a salted

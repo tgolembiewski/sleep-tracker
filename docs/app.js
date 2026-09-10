@@ -924,6 +924,246 @@ function loadCachedGarmin() {
   }
 }
 
+/* ------------------------------------------------------------------ print */
+
+/* Rebuilds the paper sheet the tracker was copied from: one A4 landscape page,
+   28 columns, the same rows and the same wording. Filling it in is optional, so
+   the same button also produces a blank sheet to hang on the fridge. */
+
+const ENERGY_SCALE = [
+  ['Wyczerpany', 'budzik to udręka, ciężka głowa, „mgła”'],
+  ['Ospały', 'wstajesz z trudem, rozkręcasz się wolno'],
+  ['Średnio', 'funkcjonujesz, ale bez energii — „da się”'],
+  ['Dobrze', 'wstajesz lekko, szybko gotowy do działania'],
+  ['W pełni wypoczęty', 'budzisz się bez walki, jasna głowa od razu'],
+];
+
+function printCell(row, className, text) {
+  const cell = document.createElement('td');
+  if (className) cell.className = className;
+  if (text) cell.innerHTML = text;
+  row.appendChild(cell);
+  return cell;
+}
+
+function buildPrintSheet(withData) {
+  const host = document.getElementById('printsheet');
+  const dates = cycleDates();
+  const current = cycle();
+  const start = current.startDate;
+  const end = addDays(start, CYCLE_LENGTH - 1);
+
+  host.innerHTML = '';
+
+  const title = document.createElement('h1');
+  title.textContent = 'Tracker nawyków snu';
+  host.appendChild(title);
+
+  const sub = document.createElement('p');
+  sub.className = 'sub';
+  sub.innerHTML = `Start: <b>${longDate(start)}</b> · 28 dni (do ${longDate(end)}) · `
+    + 'odhaczaj codziennie wieczorem · śledź tylko nawyki, które są już aktywne';
+  host.appendChild(sub);
+
+  const table = document.createElement('table');
+  table.className = 'psheet';
+
+  const head = document.createElement('thead');
+
+  const weekRow = document.createElement('tr');
+  const weekLab = document.createElement('th');
+  weekLab.className = 'lab';
+  weekLab.textContent = 'Zgodnie z planem';
+  weekRow.appendChild(weekLab);
+  for (let week = 1; week <= 4; week += 1) {
+    const cell = document.createElement('th');
+    cell.colSpan = 7;
+    cell.textContent = `Tydzień ${week}`;
+    if (week > 1) cell.className = 'weekstart';
+    weekRow.appendChild(cell);
+  }
+  head.appendChild(weekRow);
+
+  const dayRow = document.createElement('tr');
+  const dayLab = document.createElement('th');
+  dayLab.className = 'lab';
+  dayLab.textContent = 'Dzień';
+  dayRow.appendChild(dayLab);
+
+  const numRow = document.createElement('tr');
+  numRow.className = 'nums';
+  const numLab = document.createElement('th');
+  numLab.className = 'lab';
+  numLab.textContent = 'Nawyk \\ data';
+  numRow.appendChild(numLab);
+
+  dates.forEach((date, index) => {
+    const parsed = fromISO(date);
+    const classes = [
+      parsed.getDay() === 0 ? 'sun' : '',
+      index % 7 === 0 && index > 0 ? 'weekstart' : '',
+    ].filter(Boolean).join(' ');
+
+    const name = document.createElement('th');
+    name.textContent = DAY_NAMES[parsed.getDay()];
+    if (classes) name.className = classes;
+    dayRow.appendChild(name);
+
+    const num = document.createElement('th');
+    num.textContent = String(parsed.getDate());
+    if (classes) num.className = classes;
+    numRow.appendChild(num);
+  });
+
+  head.appendChild(dayRow);
+  head.appendChild(numRow);
+  table.appendChild(head);
+
+  const body = document.createElement('tbody');
+
+  current.habits.forEach((habit) => {
+    const row = document.createElement('tr');
+    const label = document.createElement('th');
+    label.className = 'lab';
+    label.textContent = habit.name;
+    row.appendChild(label);
+
+    dates.forEach((date, index) => {
+      const live = weekOfDate(date) >= habit.startWeek;
+      const record = dayRecord(date, false);
+      const on = withData && live && record && record.checks && record.checks[habit.id];
+      const classes = [
+        live ? '' : 'off',
+        index % 7 === 0 && index > 0 ? 'weekstart' : '',
+      ].filter(Boolean).join(' ');
+      printCell(row, classes, on ? '<span class="tick">✔</span>' : '');
+    });
+    body.appendChild(row);
+  });
+
+  const summaryRowFor = (title_, first, value) => {
+    const row = document.createElement('tr');
+    row.className = 'sum' + (first ? ' first-sum' : '');
+    const label = document.createElement('th');
+    label.className = 'lab';
+    label.innerHTML = title_;
+    row.appendChild(label);
+
+    dates.forEach((date, index) => {
+      const text = withData ? value(date) : '';
+      const classes = index % 7 === 0 && index > 0 ? 'weekstart' : '';
+      printCell(row, classes, text ? `<span class="num">${text}</span>` : '');
+    });
+    body.appendChild(row);
+  };
+
+  summaryRowFor('Energia rano (1–5)', true, (date) => {
+    const record = dayRecord(date, false);
+    return record && record.energy ? String(record.energy) : '';
+  });
+
+  summaryRowFor('Garmin Sleep Score (0–100)', false, (date) => {
+    const { value } = resolved(date, 'sleepScore');
+    return value === null ? '' : String(value);
+  });
+
+  summaryRowFor('Body Battery – wpływ netto snu (+/−)', false, (date) => {
+    const { value } = resolved(date, 'bbDelta');
+    if (value === null) return '';
+    return value > 0 ? `+${value}` : String(value);
+  });
+
+  const noteRow = document.createElement('tr');
+  noteRow.className = 'pnotes';
+  const noteLab = document.createElement('th');
+  noteLab.className = 'lab';
+  noteLab.innerHTML = 'Notatka dnia<small>(pisz pionowo)</small>';
+  noteRow.appendChild(noteLab);
+
+  dates.forEach((date, index) => {
+    const record = dayRecord(date, false);
+    const text = withData && record && record.note ? record.note.replace(/\n/g, ' · ') : '';
+    const cell = printCell(noteRow, index % 7 === 0 && index > 0 ? 'weekstart' : '', '');
+    if (text) {
+      const span = document.createElement('span');
+      span.className = 'vnote';
+      span.textContent = text;
+      cell.appendChild(span);
+    }
+  });
+  body.appendChild(noteRow);
+
+  table.appendChild(body);
+  host.appendChild(table);
+
+  const howto = document.createElement('p');
+  howto.className = 'howto';
+  howto.innerHTML = '<b>Jak używać:</b> zaznacz „✔” gdy nawyk zrobiony · <b>szare pola</b> = tego '
+    + 'nawyku jeszcze nie śledzisz (dochodzi w danym tygodniu wg planu) · w wierszu '
+    + '<b>Energia rano</b> wpisz liczbę <b>1–5</b> (1 = wyczerpany, 5 = w pełni wypoczęty) · '
+    + '<b>zasada „nigdy dwa razy z rzędu”</b>: jeden opuszczony dzień to wypadek, dwóch z rzędu '
+    + 'nie odpuszczaj.';
+  host.appendChild(howto);
+
+  const scaleTitle = document.createElement('h2');
+  scaleTitle.textContent = 'Skala „Energia rano” (oceń w pierwszych minutach po wstaniu, przed kawą i telefonem)';
+  host.appendChild(scaleTitle);
+
+  const scale = document.createElement('div');
+  scale.className = 'pscale';
+  ENERGY_SCALE.forEach(([name, hint], index) => {
+    const box = document.createElement('div');
+    box.innerHTML = `<span class="badge s${index + 1}">${index + 1}</span>`
+      + `<b>${name}</b><span>${hint}</span>`;
+    scale.appendChild(box);
+  });
+  host.appendChild(scale);
+
+  const trend = document.createElement('p');
+  trend.className = 'fine';
+  trend.textContent = 'Liczy się trend, nie pojedynczy dzień: plan działa, jeśli w kolejnych '
+    + 'tygodniach coraz częściej wpisujesz 4–5 zamiast 2–3. Niski wynik to informacja, nie ocena Ciebie.';
+  host.appendChild(trend);
+
+  const scoreNote = document.createElement('p');
+  scoreNote.className = 'fine';
+  scoreNote.innerHTML = '<b>Garmin Sleep Score (0–100):</b> poniżej 60 = słabo · 60–79 = przyzwoicie · '
+    + '80–89 = dobrze · 90–100 = doskonale. Wynik wczytuje się z Garmin Connect obok Twojej oceny '
+    + 'energii — po tygodniu zobaczysz, czy odczucie i dane idą w tę samą stronę (rozjazdy też są '
+    + 'ciekawą wskazówką). W wierszu <b>Body Battery – wpływ netto snu</b> jest przyrost z Garmin '
+    + 'Connect (poziom przy pobudce minus przy zaśnięciu, np. +53) — często lepiej niż sam wynik snu '
+    + 'tłumaczy, dlaczego czułeś się słabo mimo dobrej nocy.';
+  host.appendChild(scoreNote);
+
+  const tip = document.createElement('p');
+  tip.className = 'fine';
+  tip.textContent = 'Wskazówka: śledź nawyki narastająco zgodnie z planem — w tygodniu 1 tylko '
+    + '„stała pora wstawania”, w kolejnych dokładaj następne wiersze.';
+  host.appendChild(tip);
+}
+
+function openPrint() {
+  openSheet(`
+    <h2>Drukuj arkusz</h2>
+    <p class="sheet-sub">Jedna strona A4 poziomo, dokładnie jak papierowy arkusz.</p>
+    <div class="row-actions" style="flex-direction:column">
+      <button class="btn primary" type="button" data-action="with">Z moimi wpisami</button>
+      <button class="btn" type="button" data-action="blank">Pusty arkusz do wypełnienia</button>
+    </div>
+    <p class="hint">W wierszu „Notatka dnia” tekst drukuje się pionowo, tak jak na oryginale.</p>
+  `);
+
+  const run = (withData) => {
+    buildPrintSheet(withData);
+    closeSheet();
+    // Let the sheet close and the layout settle before the dialog blocks.
+    setTimeout(() => window.print(), 120);
+  };
+
+  sheet.querySelector('[data-action="with"]').addEventListener('click', () => run(true));
+  sheet.querySelector('[data-action="blank"]').addEventListener('click', () => run(false));
+}
+
 /* ------------------------------------------------------------------- gate */
 
 /* A passphrase screen, not a security boundary: this site is served from a
@@ -1066,6 +1306,7 @@ document.addEventListener('scroll', (event) => {
   });
 }, true);
 
+document.getElementById('print').addEventListener('click', openPrint);
 document.getElementById('open-settings').addEventListener('click', openSettings);
 document.getElementById('refresh').addEventListener('click', () => loadGarmin(true));
 wideScreen.addEventListener('change', render);
