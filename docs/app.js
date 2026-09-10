@@ -152,11 +152,64 @@ function resolved(date, key) {
 
 const wideScreen = window.matchMedia('(min-width: 900px)');
 
+const PHONE_CELL = 66;   // day column width when the grid scrolls sideways
+const PHONE_LABEL = 92;  // the sticky habit-name column
+
+/* The grid always holds all 28 days now. On a phone it scrolls sideways with
+   the habit names pinned; on a wide screen the columns simply fit. */
 function visibleDates() {
-  const dates = cycleDates();
-  if (wideScreen.matches) return dates;
+  return cycleDates();
+}
+
+/* The notes list and the week buttons follow whatever the grid is scrolled to. */
+function weekDates() {
   const start = (activeWeek - 1) * 7;
-  return dates.slice(start, start + 7);
+  return cycleDates().slice(start, start + 7);
+}
+
+function gridScroller() {
+  return document.querySelector('.grid-wrap');
+}
+
+/* Scroll offset that puts `index` flush against the pinned column. Measured
+   from the DOM rather than index * PHONE_CELL, so padding and borders in the
+   chain cannot make the jumps drift. */
+function dayOffset(index) {
+  const scroller = gridScroller();
+  const cell = document.querySelectorAll('#grid thead th.daynum')[index];
+  if (!scroller || !cell) return 0;
+  const left = cell.getBoundingClientRect().left - scroller.getBoundingClientRect().left;
+  return Math.max(0, scroller.scrollLeft + left - PHONE_LABEL);
+}
+
+function scrollToWeek(week, smooth) {
+  const scroller = gridScroller();
+  if (!scroller) return;
+  scroller.scrollTo({
+    left: dayOffset((week - 1) * 7),
+    behavior: smooth ? 'smooth' : 'auto',
+  });
+}
+
+/* Land on today. Called on start-up and again after the seed import, which
+   can move the cycle's first day out from under the grid. */
+function scrollToToday(smooth) {
+  const scroller = gridScroller();
+  const index = cycleDates().indexOf(todayISO());
+  if (!scroller || index < 0) return;
+  scroller.scrollTo({ left: dayOffset(index), behavior: smooth ? 'smooth' : 'auto' });
+  activeWeek = Math.floor(index / 7) + 1;
+  renderWeekbar();
+  renderNotes();
+  updateRail();
+}
+
+function weekFromScroll() {
+  const scroller = gridScroller();
+  if (!scroller) return activeWeek;
+  const step = dayOffset(7);
+  if (!step) return 1;
+  return Math.min(4, Math.max(1, Math.round(scroller.scrollLeft / step) + 1));
 }
 
 function weekOfDate(date) {
@@ -188,16 +241,35 @@ function renderMeta() {
 function renderWeekbar() {
   const bar = document.getElementById('weekbar');
   bar.innerHTML = '';
+
   for (let week = 1; week <= 4; week += 1) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = `Tydzień ${week}`;
+    // "Tydzień 1" wraps to two lines at 375 px once the Dziś button is there.
+    button.textContent = `T${week}`;
+    button.setAttribute('aria-label', `Tydzień ${week}`);
     button.setAttribute('aria-pressed', String(week === activeWeek));
     button.addEventListener('click', () => {
       activeWeek = week;
-      render();
+      scrollToWeek(week, true);
+      renderWeekbar();
+      renderNotes();
     });
     bar.appendChild(button);
+  }
+
+  const today = todayISO();
+  const index = cycleDates().indexOf(today);
+  if (index >= 0) {
+    const jump = document.createElement('button');
+    jump.type = 'button';
+    jump.className = 'jump';
+    jump.textContent = 'Dziś';
+    jump.addEventListener('click', () => {
+      const scroller = gridScroller();
+      if (scroller) scroller.scrollTo({ left: dayOffset(index), behavior: 'smooth' });
+    });
+    bar.appendChild(jump);
   }
 }
 
@@ -232,14 +304,15 @@ function renderGrid() {
   const numRow = document.createElement('tr');
   numRow.appendChild(headCell('th', 'Nawyk \\ data', 'rowhead'));
 
-  dates.forEach((date) => {
+  dates.forEach((date, index) => {
     const parsed = fromISO(date);
     const sunday = parsed.getDay() === 0;
     const isToday = date === today;
+    const starts = index % 7 === 0 && index > 0;
     const name = headCell('th', DAY_NAMES[parsed.getDay()],
-      `dayname${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}`);
+      `dayname${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}${starts ? ' weekstart' : ''}`);
     const num = headCell('th', String(parsed.getDate()),
-      `daynum${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}`);
+      `daynum${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}${starts ? ' weekstart' : ''}`);
     nameRow.appendChild(name);
     numRow.appendChild(num);
   });
@@ -260,7 +333,9 @@ function renderGrid() {
     dates.forEach((date) => {
       const cell = document.createElement('td');
       const active = weekOfDate(date) >= habit.startWeek;
-      cell.className = `day${active ? '' : ' inactive'}${date === today ? ' today' : ''}${date > today ? ' future' : ''}`;
+      const starts = dates.indexOf(date) % 7 === 0 && dates.indexOf(date) > 0;
+      cell.className = `day${active ? '' : ' inactive'}${date === today ? ' today' : ''}`
+        + `${date > today ? ' future' : ''}${starts ? ' weekstart' : ''}`;
       if (active) {
         const record = dayRecord(date, false);
         const on = Boolean(record && record.checks && record.checks[habit.id]);
@@ -337,9 +412,11 @@ function summaryRow(title, dates, today, build, sectionStart, readOnly) {
   head.textContent = title;
   row.appendChild(head);
 
-  dates.forEach((date) => {
+  dates.forEach((date, index) => {
     const cell = document.createElement('td');
-    cell.className = `day${date === today ? ' today' : ''}${date > today ? ' future' : ''}`;
+    const starts = index % 7 === 0 && index > 0;
+    cell.className = `day${date === today ? ' today' : ''}`
+      + `${date > today ? ' future' : ''}${starts ? ' weekstart' : ''}`;
     const spec = build(date);
     const body = spec.html || `<span class="value ${spec.className}">${spec.text}</span>`;
 
@@ -365,8 +442,8 @@ function summaryRow(title, dates, today, build, sectionStart, readOnly) {
 
 function renderNotes() {
   const container = document.getElementById('notes');
-  container.innerHTML = '<h2>Notatki dnia</h2>';
-  visibleDates().forEach((date) => {
+  container.innerHTML = `<h2>Notatki dnia · tydzień ${activeWeek}</h2>`;
+  weekDates().forEach((date) => {
     const record = dayRecord(date, false);
     const text = record && record.note ? record.note.trim() : '';
     const button = document.createElement('button');
@@ -380,12 +457,47 @@ function renderNotes() {
   });
 }
 
+/* On a phone the day columns keep a fixed width and the table is wider than
+   the screen; on a wide screen the columns share whatever space there is. */
+function sizeGrid() {
+  const table = document.getElementById('grid');
+  if (!table) return;
+  table.style.width = wideScreen.matches
+    ? ''
+    : `${PHONE_LABEL + CYCLE_LENGTH * PHONE_CELL}px`;
+}
+
+function updateRail() {
+  const scroller = gridScroller();
+  const thumb = document.getElementById('rail-thumb');
+  if (!scroller || !thumb) return;
+
+  const span = scroller.scrollWidth - scroller.clientWidth;
+  const visible = Math.min(1, scroller.clientWidth / Math.max(1, scroller.scrollWidth));
+  thumb.style.width = `${Math.max(12, visible * 100)}%`;
+  thumb.style.marginLeft = span > 0
+    ? `${(scroller.scrollLeft / span) * (100 - Math.max(12, visible * 100))}%`
+    : '0%';
+}
+
 function render() {
   document.documentElement.dataset.theme = state.settings.theme;
+
+  // Rebuilding the table empties the scroller, which would throw it back to
+  // day one; hold the offset and restore it once the rows are in place.
+  const scroller = gridScroller();
+  const keepAt = scroller ? scroller.scrollLeft : 0;
+
   renderMeta();
   renderWeekbar();
   renderGrid();
+  sizeGrid();
+
+  const after = gridScroller();
+  if (after) after.scrollLeft = keepAt;
+
   renderNotes();
+  updateRail();
 }
 
 /* ---------------------------------------------------------------- editing */
@@ -603,6 +715,7 @@ function openSettings() {
     current.startDate = event.target.value;
     save();
     render();
+    scrollToToday(false);
   });
 
   sheet.querySelector('#dataurl').addEventListener('change', (event) => {
@@ -760,6 +873,7 @@ function applySeed(seed) {
   save();
   pickInitialWeek();
   render();
+  requestAnimationFrame(() => scrollToToday(false));
   return filled;
 }
 
@@ -935,6 +1049,23 @@ function pickInitialWeek() {
   activeWeek = index < 0 ? 1 : Math.floor(index / 7) + 1;
 }
 
+let railTicking = false;
+document.addEventListener('scroll', (event) => {
+  const scroller = gridScroller();
+  if (!scroller || event.target !== scroller || railTicking) return;
+  railTicking = true;
+  requestAnimationFrame(() => {
+    updateRail();
+    const week = weekFromScroll();
+    if (week !== activeWeek) {
+      activeWeek = week;
+      renderWeekbar();
+      renderNotes();
+    }
+    railTicking = false;
+  });
+}, true);
+
 document.getElementById('open-settings').addEventListener('click', openSettings);
 document.getElementById('refresh').addEventListener('click', () => loadGarmin(true));
 wideScreen.addEventListener('change', render);
@@ -950,6 +1081,10 @@ passGate().then(() => {
   pickInitialWeek();
   save();
   render();
+
+  // Land on today, the way you would open the paper sheet.
+  requestAnimationFrame(() => scrollToToday(false));
+
   if (freshInstall) importSeed(false);
   loadGarmin(false);
 });

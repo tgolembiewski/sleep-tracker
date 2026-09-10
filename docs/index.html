@@ -31,8 +31,14 @@
 <nav class="weekbar" id="weekbar" aria-label="Wybór tygodnia"></nav>
 
 <main>
-  <div class="grid-wrap">
-    <table class="grid" id="grid"></table>
+  <div class="grid-frame">
+    <div class="grid-wrap">
+      <table class="grid" id="grid"></table>
+    </div>
+    <div class="rail">
+      <span class="rail-hint">← przesuń w bok →</span>
+      <span class="rail-track"><span class="rail-thumb" id="rail-thumb"></span></span>
+    </div>
   </div>
 
   <section class="notes" id="notes">

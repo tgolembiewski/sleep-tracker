@@ -146,6 +146,13 @@ button { cursor: pointer; }
   font-weight: 600;
 }
 
+.weekbar button.jump {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .weekbar button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
@@ -156,13 +163,56 @@ button { cursor: pointer; }
 
 main { padding: 0 16px 40px; }
 
-.grid-wrap {
-  overflow-x: auto;
+.grid-frame {
   background: var(--surface);
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
+
+.grid-wrap {
+  overflow-x: auto;
+  scroll-padding-left: 92px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.grid-wrap::-webkit-scrollbar { display: none; }
+
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 9px;
+  border-top: 1px solid var(--rule);
+  background: var(--surface-alt);
+}
+
+.rail-hint {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: .02em;
+}
+
+.rail-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.rail-thumb {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* week boundaries stay legible once the days scroll past the pinned column */
+table.grid th.weekstart, table.grid td.weekstart { border-left: 2px solid var(--rule-strong); }
 
 table.grid {
   border-collapse: separate;
@@ -186,9 +236,10 @@ table.grid th.rowhead, table.grid td.rowhead {
   position: sticky;
   left: 0;
   z-index: 5;
-  width: 122px;
-  min-width: 122px;
-  max-width: 122px;
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+  box-shadow: 6px 0 8px -7px rgba(20, 35, 70, .22);
   text-align: left;
   padding: 7px 9px;
   background: var(--surface);
@@ -213,6 +264,9 @@ table.grid thead th.rowhead {
   font-size: 12px;
   border-right-color: rgba(255, 255, 255, .35);
 }
+
+thead th.dayname, thead th.daynum { width: 66px; min-width: 66px; max-width: 66px; }
+thead th.daynum { scroll-snap-align: start; }
 
 thead th.weekgroup { font-size: 12px; letter-spacing: .02em; }
 thead th.dayname { font-size: 11px; opacity: .9; font-weight: 500; }
@@ -495,10 +549,14 @@ textarea { min-height: 130px; resize: vertical; }
 /* ---------- wide screens: whole 28-day block ---------- */
 
 @media (min-width: 900px) {
-  .weekbar, .notes { display: none; }
+  .weekbar, .notes, .rail { display: none; }
+  .grid-wrap { scroll-snap-type: none; }
+  table.grid thead th.dayname,
+  table.grid thead th.daynum { width: auto; min-width: 0; max-width: none; }
   main { padding: 14px 20px 48px; }
   table.grid th.rowhead, table.grid td.rowhead {
     width: 210px; min-width: 210px; max-width: 210px; font-size: 13.5px;
+    box-shadow: none;
   }
   table.grid th, table.grid td { font-size: 13px; }
   .legend { grid-template-columns: 1fr 1fr; align-items: start; }

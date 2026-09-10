@@ -154,6 +154,11 @@ authentication server-side.
 
 ## Things worth knowing
 
+- On a phone the grid holds all 28 days at a fixed 66 px per column and scrolls
+  sideways with the habit names pinned; `T1`–`T4` and `Dziś` jump to a week, and
+  those jumps are measured from the DOM rather than computed as
+  `index * 66`, so they cannot drift out of alignment with the pinned column.
+  A screen 900 px or wider keeps the whole 28-day grid on show, unchanged.
 - Habit data lives only in `localStorage`. Clearing Safari website data, or
   deleting the installed app, deletes the tracker's history with it. The iPhone
   and the iPad keep separate copies and do not sync.
