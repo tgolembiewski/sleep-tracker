@@ -1,4 +1,4 @@
-const CACHE = 'sen-tracker-v4';
+const CACHE = 'sen-tracker-v5';
 
 const SHELL = [
   './',
@@ -32,9 +32,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Garmin data and the starting sheet must never be served stale from cache
-  // while the network works.
-  if (url.pathname.endsWith('data.json') || url.pathname.endsWith('seed.json')) {
+  // JSON the app fetches with a cache-busting query: always try the network
+  // first, and key the cached copy on the bare path so repeated launches
+  // cannot pile up one entry per query string.
+  if (/\/(data|seed|gate)\.json$/.test(url.pathname)) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -47,12 +48,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell: cache first, refresh in the background.
+  // App shell: cache first, refresh in the background. Requests carrying a
+  // query string are served but never stored, so cache-busted one-off fetches
+  // do not accumulate.
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
         .then((response) => {
-          if (response && response.ok && url.origin === self.location.origin) {
+          if (response && response.ok && !url.search && url.origin === self.location.origin) {
             const copy = response.clone();
             caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
