@@ -1,4 +1,117 @@
 {
-  "days": {},
-  "generatedAt": null
+  "days": {
+    "2026-08-28": {
+      "bbDelta": 25,
+      "bbEnd": 30,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepScore": 53,
+      "sleepSeconds": 18900
+    },
+    "2026-08-29": {
+      "bbDelta": 43,
+      "bbEnd": 63,
+      "bbStart": 20,
+      "qualifier": "FAIR",
+      "sleepScore": 70,
+      "sleepSeconds": 23460
+    },
+    "2026-08-30": {
+      "bbDelta": 25,
+      "bbEnd": 30,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepScore": 42,
+      "sleepSeconds": 22380
+    },
+    "2026-08-31": {
+      "bbDelta": 47,
+      "bbEnd": 51,
+      "bbStart": 5,
+      "qualifier": "FAIR",
+      "sleepScore": 64,
+      "sleepSeconds": 26640
+    },
+    "2026-09-01": {
+      "bbDelta": 27,
+      "bbEnd": 32,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepScore": 54,
+      "sleepSeconds": 23931
+    },
+    "2026-09-02": {
+      "bbDelta": 51,
+      "bbEnd": 56,
+      "bbStart": 5,
+      "qualifier": "FAIR",
+      "sleepScore": 64,
+      "sleepSeconds": 29991
+    },
+    "2026-09-03": {
+      "bbDelta": 18,
+      "bbEnd": 60,
+      "bbStart": 41,
+      "qualifier": "POOR",
+      "sleepScore": 51,
+      "sleepSeconds": 22192
+    },
+    "2026-09-04": {
+      "bbDelta": 24,
+      "bbEnd": 29,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepScore": 57,
+      "sleepSeconds": 25354
+    },
+    "2026-09-05": {
+      "bbDelta": 24,
+      "bbEnd": 29,
+      "bbStart": 5,
+      "qualifier": "FAIR",
+      "sleepScore": 62,
+      "sleepSeconds": 23100
+    },
+    "2026-09-06": {
+      "bbDelta": 34,
+      "bbEnd": 40,
+      "bbStart": 5,
+      "qualifier": "FAIR",
+      "sleepScore": 71,
+      "sleepSeconds": 25140
+    },
+    "2026-09-07": {
+      "bbDelta": 27,
+      "bbEnd": 32,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepScore": 52,
+      "sleepSeconds": 20200
+    },
+    "2026-09-08": {
+      "bbDelta": 49,
+      "bbEnd": 74,
+      "bbStart": 25,
+      "qualifier": "FAIR",
+      "sleepScore": 77,
+      "sleepSeconds": 25680
+    },
+    "2026-09-09": {
+      "bbDelta": 31,
+      "bbEnd": 37,
+      "bbStart": 6,
+      "qualifier": "POOR",
+      "sleepScore": 55,
+      "sleepSeconds": 25020
+    },
+    "2026-09-10": {
+      "bbDelta": 57,
+      "bbEnd": 63,
+      "bbStart": 6,
+      "qualifier": "GOOD",
+      "sleepScore": 80,
+      "sleepSeconds": 27539
+    }
+  },
+  "generatedAt": "2026-09-10T13:23:48+00:00"
 }
