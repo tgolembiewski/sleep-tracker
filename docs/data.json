@@ -153,7 +153,18 @@
       "sleepSeconds": 27539,
       "sleepStart": "01:13",
       "steps": 10873
+    },
+    "2026-09-11": {
+      "bbDelta": 27,
+      "bbEnd": 33,
+      "bbStart": 6,
+      "qualifier": "POOR",
+      "sleepEnd": "08:26",
+      "sleepScore": 47,
+      "sleepSeconds": 22140,
+      "sleepStart": "01:40",
+      "steps": 465
     }
   },
-  "generatedAt": "2026-09-10T23:27:12+00:00"
+  "generatedAt": "2026-09-11T09:19:56+00:00"
 }
