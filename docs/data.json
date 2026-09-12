@@ -163,7 +163,7 @@
       "sleepScore": 47,
       "sleepSeconds": 22140,
       "sleepStart": "01:40",
-      "steps": 2869
+      "steps": 4090
     },
     "2026-09-12": {
       "bbDelta": 25,
@@ -177,5 +177,5 @@
       "steps": 4173
     }
   },
-  "generatedAt": "2026-09-12T08:59:17+00:00"
+  "generatedAt": "2026-09-12T08:59:42+00:00"
 }
