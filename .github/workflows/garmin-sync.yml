@@ -5,10 +5,14 @@ on:
     # Times are UTC and cron does not follow daylight saving, so the window is
     # the union of both Polish offsets: 05:00-11:59 UTC is 07:00-13:59 in
     # summer (UTC+2) and 06:00-12:59 in winter (UTC+1), covering a 07:00-11:00
-    # wake-up either way. Every 15 minutes, so the night shows up shortly after
-    # the watch syncs; runs short-circuit without contacting Garmin once the
+    # wake-up either way. Runs short-circuit without contacting Garmin once the
     # sleep score for the day is on file.
-    - cron: "*/15 5-11 * * *"
+    #
+    # One line per hour rather than */15: GitHub drops most slots of a
+    # high-frequency schedule on a free public repository, and it drops them
+    # silently, so asking for four runs an hour delivered about three a day.
+    # The odd minute keeps us off :00 and :30, which are the most contended.
+    - cron: "7 5,6,7,8,9,10,11 * * *"
     # One wider pass later on to catch a watch that synced late.
     - cron: "0 15 * * *"
   workflow_dispatch:

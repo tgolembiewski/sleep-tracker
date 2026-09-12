@@ -225,17 +225,47 @@ function scoreClass(score) {
   return 'e5';
 }
 
+/* The most recent date Garmin has a sleep score for, or null when there is
+   nothing on file yet. */
+function newestGarminDate() {
+  const dates = Object.keys(garmin.days || {}).filter((date) => {
+    const day = garmin.days[date];
+    return day && day.sleepScore !== undefined && day.sleepScore !== null;
+  });
+  if (!dates.length) return null;
+  dates.sort();
+  return dates[dates.length - 1];
+}
+
+function syncStamp() {
+  if (!garmin.generatedAt) return null;
+  return new Date(garmin.generatedAt).toLocaleString('pl-PL', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 function renderMeta() {
   const start = cycle().startDate;
   const end = addDays(start, CYCLE_LENGTH - 1);
   const parts = [`Start: ${longDate(start)}`, `28 dni (do ${longDate(end)})`];
-  if (garmin.generatedAt) {
-    const stamp = new Date(garmin.generatedAt);
-    parts.push(`Garmin: ${stamp.toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
-  } else {
-    parts.push('Garmin: brak danych');
+  const meta = document.getElementById('meta');
+  const stamp = syncStamp();
+  const newest = newestGarminDate();
+
+  /* Say so when last night is still missing. Without this the line shows only
+     when the sync last ran, which looks healthy even while the night that
+     matters never arrived. */
+  if (stamp && newest && newest < todayISO()) {
+    meta.textContent = parts.join(' · ') + ' · ';
+    const warn = document.createElement('span');
+    warn.className = 'stale';
+    warn.textContent = `Garmin: brak dzisiejszej nocy (ostatnia synchronizacja ${stamp})`;
+    meta.appendChild(warn);
+    return;
   }
-  document.getElementById('meta').textContent = parts.join(' · ');
+
+  parts.push(stamp ? `Garmin: ${stamp}` : 'Garmin: brak danych');
+  meta.textContent = parts.join(' · ');
 }
 
 function renderWeekbar() {
