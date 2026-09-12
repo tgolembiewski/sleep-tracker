@@ -108,6 +108,69 @@ button { cursor: pointer; }
 
 .topbar .meta .stale { color: var(--warn); }
 
+/* Sits between the header and the week bar, so a dead Garmin token is the
+   first thing seen rather than something noticed days later. */
+.tokenbar {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  color: #3a2a06;
+  background: #fdf0d5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tokenbar[data-level="dead"] {
+  color: #4a1512;
+  background: #fbdedc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tokenbar { color: #f6e2bd; background: #3a2c10; }
+  :root:not([data-theme="light"]) .tokenbar[data-level="dead"] { color: #f8d6d3; background: #431916; }
+}
+
+:root[data-theme="dark"] .tokenbar { color: #f6e2bd; background: #3a2c10; }
+:root[data-theme="dark"] .tokenbar[data-level="dead"] { color: #f8d6d3; background: #431916; }
+
+/* A command the user copies out to a terminal: must wrap, never be truncated,
+   and stay selectable when the clipboard API is unavailable. */
+.sheet .cmd {
+  display: block;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.linkish {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media print {
+  .tokenbar { display: none !important; }
+}
+
 .topbar .grow { flex: 1; min-width: 0; }
 
 .icon-button {

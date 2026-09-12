@@ -15,6 +15,7 @@ ever deleting days it did not fetch.
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import json
 import os
@@ -46,6 +47,32 @@ def clock(local_ms: Any) -> str | None:
         return None
     moment = dt.datetime.fromtimestamp(local_ms / 1000, dt.timezone.utc)
     return moment.strftime("%H:%M")
+
+
+REFRESH_TOKEN_DAYS = 30  # what Garmin reports as refresh_token_expires_in
+
+
+def token_expiry(blob: str) -> str | None:
+    """The day the token blob stops working, as an ISO date.
+
+    Garmin issues the access and refresh tokens together, so the ``iat`` inside
+    the access token is also the refresh token's birthday, and the refresh
+    token lasts 30 days from there. Each refresh mints a replacement with a
+    fresh 30 days, but the workflow reads the same secret on every run and
+    never writes the replacement back, so the deadline is fixed at the moment
+    the secret was set. Returns None rather than raising: a blob we cannot read
+    should cost us the warning, not the sync.
+    """
+    try:
+        text = blob.strip()
+        if not text.startswith("{"):
+            text = base64.b64decode(text).decode("utf-8")
+        payload = json.loads(text)["di_token"].split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        issued = dt.datetime.fromtimestamp(claims["iat"], dt.timezone.utc)
+    except Exception:  # noqa: BLE001 - malformed blob, nothing to report
+        return None
+    return (issued + dt.timedelta(days=REFRESH_TOKEN_DAYS)).date().isoformat()
 
 
 def connect() -> Garmin:
@@ -246,12 +273,29 @@ def main() -> int:
         for offset in range(args.days - 1, -1, -1)
     ]
 
+    # Only the secret's own blob may set this. A local run authenticates from
+    # ~/.garminconnect, which is a different token chain on a different clock,
+    # and would otherwise overwrite the date the app warns against.
+    expiry = token_expiry(os.environ.get("GARMIN_TOKENS", ""))
+
     if args.skip_if_complete:
         # Lets the morning poll run every quarter of an hour while still hitting
         # Garmin only until the night actually shows up.
-        known = load_existing(args.output).get("days", {})
-        if all((known.get(date) or {}).get("sleepScore") is not None for date in dates):
+        known = load_existing(args.output)
+        if all(
+            (known.get("days", {}).get(date) or {}).get("sleepScore") is not None
+            for date in dates
+        ):
             print("Every requested day already has a sleep score, nothing to do.")
+            # A renewed secret must still reach the app today, not whenever the
+            # next run happens to have work to do.
+            if expiry and known.get("tokenExpires") != expiry:
+                known["tokenExpires"] = expiry
+                args.output.write_text(
+                    json.dumps(known, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                print(f"Token blob expires {expiry}.")
             return 0
 
     try:
@@ -269,6 +313,10 @@ def main() -> int:
 
     data = load_existing(args.output)
     changed = 0
+    if expiry:
+        # A plain date, so a run that renews nothing leaves the file
+        # byte-identical and the workflow commits nothing.
+        data["tokenExpires"] = expiry
 
     for index, date in enumerate(dates):
         try:

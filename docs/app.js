@@ -268,6 +268,100 @@ function renderMeta() {
   meta.textContent = parts.join(' · ');
 }
 
+/* ----------------------------------------------------------- token expiry */
+
+/* Garmin's refresh token dies 30 days after it was issued, and the sync reads
+   the same stored copy on every run, so the deadline never moves on its own.
+   The sync writes it into data.json; here we only count down to it. */
+const TOKEN_WARN_DAYS = 7;
+
+function tokenDaysLeft() {
+  if (!garmin.tokenExpires) return null;
+  const deadline = fromISO(garmin.tokenExpires);
+  if (Number.isNaN(deadline.getTime())) return null;
+  const today = fromISO(todayISO());
+  return Math.round((deadline - today) / 86400000);
+}
+
+function plDays(count) {
+  return count === 1 ? '1 dzień' : `${count} dni`;
+}
+
+function renderTokenBar() {
+  const bar = document.getElementById('tokenbar');
+  if (!bar) return;
+  const left = tokenDaysLeft();
+
+  if (left === null || left > TOKEN_WARN_DAYS) {
+    bar.hidden = true;
+    return;
+  }
+
+  bar.hidden = false;
+  bar.dataset.level = left <= 0 ? 'dead' : 'soon';
+  bar.textContent = left <= 0
+    ? `Dostęp do Garmina wygasł ${longDate(garmin.tokenExpires)} — nowe dane nie przychodzą. Dotknij, aby odnowić.`
+    : `Dostęp do Garmina wygasa za ${plDays(left)} (${longDate(garmin.tokenExpires)}). Dotknij, aby odnowić.`;
+}
+
+function openTokenHelp() {
+  const left = tokenDaysLeft();
+  const headline = left !== null && left <= 0
+    ? `Dostęp wygasł ${longDate(garmin.tokenExpires)}.`
+    : `Dostęp wygasa ${longDate(garmin.tokenExpires)}.`;
+
+  openSheet(`
+    <h2>Odnów dostęp do Garmina</h2>
+    <p class="sheet-sub">${headline} Garmin wydaje token ważny 30 dni — po tym czasie
+    synchronizacja przestaje pobierać nowe noce, dopóki nie wgrasz nowego.</p>
+
+    <p class="hint">Tego kroku nie da się wykonać w samej aplikacji: musiałaby
+    przechowywać hasło do GitHuba, a strona jest publiczna. Zrób to na komputerze —
+    zajmuje minutę.</p>
+
+    <h3>1. Zaloguj się do Garmina</h3>
+    <p class="hint">W terminalu, w katalogu projektu. Zapyta o e-mail, hasło i kod MFA.</p>
+    <code class="cmd" id="cmd1">.venv/bin/python scripts/garmin_login.py</code>
+    <button class="btn" type="button" data-action="copy1" style="margin-top:8px">Kopiuj polecenie</button>
+
+    <h3>2. Wyślij nowy token do GitHuba</h3>
+    <p class="hint">Token idzie prosto do sekretu, nie pokazuje się na ekranie.</p>
+    <code class="cmd" id="cmd2">.venv/bin/python scripts/garmin_login.py --show-tokens | gh secret set GARMIN_TOKENS</code>
+    <button class="btn" type="button" data-action="copy2" style="margin-top:8px">Kopiuj polecenie</button>
+
+    <h3>3. Sprawdź</h3>
+    <p class="hint">Data poniżej zmieni się po najbliższej synchronizacji — zwykle w ciągu
+    kilku godzin. Możesz też podejrzeć sekret na GitHubie.</p>
+    <a class="btn" href="https://github.com/tgolembiewski/sleep-tracker/settings/secrets/actions"
+       target="_blank" rel="noopener">Otwórz sekrety na GitHubie</a>
+
+    <div class="row-actions">
+      <button class="btn primary" type="button" data-action="close">Zamknij</button>
+    </div>
+  `);
+
+  const copy = (id) => async () => {
+    const text = sheet.querySelector('#' + id).textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Skopiowano');
+    } catch (error) {
+      /* Clipboard needs a secure context and a permission the browser may
+         refuse; selecting the text leaves the user a working fallback. */
+      const range = document.createRange();
+      range.selectNodeContents(sheet.querySelector('#' + id));
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      toast('Zaznaczono — skopiuj ręcznie');
+    }
+  };
+
+  sheet.querySelector('[data-action="copy1"]').addEventListener('click', copy('cmd1'));
+  sheet.querySelector('[data-action="copy2"]').addEventListener('click', copy('cmd2'));
+  sheet.querySelector('[data-action="close"]').addEventListener('click', closeSheet);
+}
+
 function renderWeekbar() {
   const bar = document.getElementById('weekbar');
   bar.innerHTML = '';
@@ -561,6 +655,7 @@ function render() {
   const keepAt = scroller ? scroller.scrollLeft : 0;
 
   renderMeta();
+  renderTokenBar();
   renderWeekbar();
   renderGrid();
   sizeGrid();
@@ -763,6 +858,9 @@ function openSettings() {
     <p class="hint">${garmin.generatedAt
       ? 'Ostatnia aktualizacja: ' + new Date(garmin.generatedAt).toLocaleString('pl-PL')
       : 'Nie wczytano jeszcze żadnych danych.'}</p>
+    ${garmin.tokenExpires ? `<p class="hint">Dostęp do Garmina ważny do:
+      <b>${longDate(garmin.tokenExpires)}</b>.
+      <button class="linkish" type="button" data-action="token-help">Jak odnowić?</button></p>` : ''}
 
     <h3>Wygląd</h3>
     <div class="field">
@@ -783,6 +881,9 @@ function openSettings() {
   `);
 
   sheet.querySelector('#theme').value = state.settings.theme;
+
+  const tokenHelp = sheet.querySelector('[data-action="token-help"]');
+  if (tokenHelp) tokenHelp.addEventListener('click', openTokenHelp);
 
   renderHabitEditor();
   renderCycleList();
@@ -976,7 +1077,11 @@ async function loadGarmin(announce) {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    garmin = { generatedAt: data.generatedAt || null, days: data.days || {} };
+    garmin = {
+      generatedAt: data.generatedAt || null,
+      days: data.days || {},
+      tokenExpires: data.tokenExpires || null,
+    };
     try {
       localStorage.setItem(STORAGE_KEY + '.garmin', JSON.stringify(garmin));
     } catch (error) {
@@ -1389,6 +1494,7 @@ document.addEventListener('scroll', (event) => {
 
 document.getElementById('print').addEventListener('click', openPrint);
 document.getElementById('open-settings').addEventListener('click', openSettings);
+document.getElementById('tokenbar').addEventListener('click', openTokenHelp);
 document.getElementById('refresh').addEventListener('click', () => loadGarmin(true));
 wideScreen.addEventListener('change', render);
 document.addEventListener('visibilitychange', () => {

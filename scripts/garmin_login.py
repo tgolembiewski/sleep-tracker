@@ -13,9 +13,12 @@ your scrollback or your clipboard:
 
     python scripts/garmin_login.py --show-tokens | gh secret set GARMIN_TOKENS
 
-The OAuth1 token inside the blob is valid for roughly one year; the OAuth2
-token refreshes itself automatically. Re-run this script when the workflow
-starts failing with an authentication error.
+Garmin's token endpoint reports refresh_token_expires_in as 2591999 seconds,
+so the blob stops working 30 days after this login. A refresh mints a
+replacement with a fresh 30 days, but the workflow reads the same secret every
+run and never writes the replacement back, which fixes the deadline at the
+moment the secret was set. The app counts down to it and shows the steps
+above; re-run this script before it runs out.
 """
 
 from __future__ import annotations
