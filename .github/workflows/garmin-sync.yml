@@ -13,6 +13,10 @@ on:
     # silently, so asking for four runs an hour delivered about three a day.
     # The odd minute keeps us off :00 and :30, which are the most contended.
     - cron: "7 5,6,7,8,9,10,11 * * *"
+    # Spread chances through the rest of the day. A morning run that GitHub
+    # dropped means the night is late, not lost: whichever of these fires
+    # first backfills it, and the rest cost nothing once it is on file.
+    - cron: "37 13,17,21 * * *"
     # One wider pass later on to catch a watch that synced late.
     - cron: "0 15 * * *"
   workflow_dispatch:
@@ -50,7 +54,10 @@ jobs:
           elif [ "${{ github.event.schedule }}" = "0 15 * * *" ]; then
             echo "args=--days 7" >> "$GITHUB_OUTPUT"
           else
-            echo "args=--days 1 --skip-if-complete" >> "$GITHUB_OUTPUT"
+            # Three days, not one: a run only reaches Garmin when one of them
+            # is still missing a sleep score, so whichever run survives the
+            # throttling repairs the gap the dropped ones left behind.
+            echo "args=--days 3 --skip-if-complete" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Fetch sleep score and body battery
