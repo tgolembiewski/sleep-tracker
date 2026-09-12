@@ -132,6 +132,8 @@ button { cursor: pointer; }
   background: #fbdedc;
 }
 
+.tokenbar[hidden] { display: none; }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .tokenbar { color: #f6e2bd; background: #3a2c10; }
   :root:not([data-theme="light"]) .tokenbar[data-level="dead"] { color: #f8d6d3; background: #431916; }
@@ -637,6 +639,7 @@ textarea { min-height: 130px; resize: vertical; }
 /* ---------- unlock gate ---------- */
 
 :root[data-locked] .topbar,
+:root[data-locked] .tokenbar,
 :root[data-locked] .weekbar,
 :root[data-locked] main { display: none; }
 
