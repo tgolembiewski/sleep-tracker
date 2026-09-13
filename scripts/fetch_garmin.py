@@ -203,18 +203,24 @@ def diagnose_gap(client: Garmin, date: str) -> dict[str, Any] | None:
             else None
         )
         steps = day_steps(client, date)
+        raw = client.get_sleep_data(date) or {}
     except Exception as error:  # noqa: BLE001 - a diagnosis is a nice-to-have
         print(f"  could not diagnose the gap: {error}")
         return None
 
     synced_today = uploaded is not None and uploaded.astimezone().date().isoformat() >= date
     walked = bool(steps)
+    # The raw stages and movement samples are written straight from the watch,
+    # before Garmin scores anything. Their absence alongside a day's worth of
+    # steps from the same upload means there is no night to score, not a night
+    # still being scored - which the clock alone cannot tell you.
+    measured = bool(raw.get("sleepLevels") or raw.get("sleepMovement"))
 
     if not synced_today and not walked:
         reason = "watch-not-synced"
-    elif dt.datetime.now().hour >= 14:
-        # Synced, the day is well under way, and still no night: the likeliest
-        # explanation is that the watch was not worn rather than a delay.
+    elif measured:
+        reason = "garmin-processing"
+    elif walked:
         reason = "not-recorded"
     else:
         reason = "garmin-processing"
