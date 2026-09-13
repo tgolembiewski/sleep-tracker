@@ -244,6 +244,40 @@ function syncStamp() {
   });
 }
 
+/* A missing night has several causes that look identical from here, so the
+   sync writes down which one it found and this only phrases it. The fourth
+   case is the absence of a note: nothing has even looked yet today. */
+function missingNightReason() {
+  const gap = garmin.gap;
+  const stamp = syncStamp();
+
+  if (gap && gap.date === todayISO()) {
+    const upload = gap.deviceLastUpload
+      ? new Date(gap.deviceLastUpload).toLocaleString('pl-PL', {
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+      : null;
+    const watch = gap.device || 'Zegarek';
+
+    if (gap.reason === 'watch-not-synced') {
+      return upload
+        ? `${watch} nie zsynchronizował się od ${upload} — otwórz aplikację Garmin Connect`
+        : `${watch} nie zsynchronizował się — otwórz aplikację Garmin Connect`;
+    }
+    if (gap.reason === 'garmin-processing') {
+      return 'Garmin nie policzył jeszcze tej nocy — dane zwykle dochodzą w ciągu godziny';
+    }
+    if (gap.reason === 'not-recorded') {
+      return `${watch} nie zapisał tej nocy — prawdopodobnie nie był noszony`;
+    }
+  }
+
+  /* No note for today means no sync run has looked since yesterday. */
+  return stamp
+    ? `brak dzisiejszej nocy — ostatnia synchronizacja ${stamp}`
+    : 'brak dzisiejszej nocy';
+}
+
 function renderMeta() {
   const start = cycle().startDate;
   const end = addDays(start, CYCLE_LENGTH - 1);
@@ -259,7 +293,7 @@ function renderMeta() {
     meta.textContent = parts.join(' · ') + ' · ';
     const warn = document.createElement('span');
     warn.className = 'stale';
-    warn.textContent = `Garmin: brak dzisiejszej nocy (ostatnia synchronizacja ${stamp})`;
+    warn.textContent = `Garmin: ${missingNightReason()}`;
     meta.appendChild(warn);
     return;
   }
@@ -1081,6 +1115,7 @@ async function loadGarmin(announce) {
       generatedAt: data.generatedAt || null,
       days: data.days || {},
       tokenExpires: data.tokenExpires || null,
+      gap: data.gap || null,
     };
     try {
       localStorage.setItem(STORAGE_KEY + '.garmin', JSON.stringify(garmin));

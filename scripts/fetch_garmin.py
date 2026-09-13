@@ -181,6 +181,52 @@ def day_steps(client: Garmin, date: str) -> int | None:
     return int(steps) if isinstance(steps, (int, float)) else None
 
 
+def diagnose_gap(client: Garmin, date: str) -> dict[str, Any] | None:
+    """Why `date` has no sleep record, in terms the app can show the user.
+
+    A missing night has three very different causes and they need three very
+    different reactions, but from the app's side they look identical: nothing
+    arrived. Garmin can tell them apart — whether the watch has uploaded since
+    midnight, and whether any steps landed for the day — so decide it here and
+    let the app render one of the reasons rather than re-derive Garmin's
+    semantics on every device.
+
+    Returns None when the cause cannot be established, which is itself honest:
+    better no explanation than a wrong one.
+    """
+    try:
+        last = client.get_device_last_used() or {}
+        uploaded_ms = last.get("lastUsedDeviceUploadTime")
+        uploaded = (
+            dt.datetime.fromtimestamp(uploaded_ms / 1000, dt.timezone.utc)
+            if isinstance(uploaded_ms, (int, float))
+            else None
+        )
+        steps = day_steps(client, date)
+    except Exception as error:  # noqa: BLE001 - a diagnosis is a nice-to-have
+        print(f"  could not diagnose the gap: {error}")
+        return None
+
+    synced_today = uploaded is not None and uploaded.astimezone().date().isoformat() >= date
+    walked = bool(steps)
+
+    if not synced_today and not walked:
+        reason = "watch-not-synced"
+    elif dt.datetime.now().hour >= 14:
+        # Synced, the day is well under way, and still no night: the likeliest
+        # explanation is that the watch was not worn rather than a delay.
+        reason = "not-recorded"
+    else:
+        reason = "garmin-processing"
+
+    gap: dict[str, Any] = {"date": date, "reason": reason}
+    if uploaded:
+        gap["deviceLastUpload"] = uploaded.isoformat(timespec="seconds")
+    if last.get("lastUsedDeviceName"):
+        gap["device"] = last["lastUsedDeviceName"]
+    return gap
+
+
 def collect_day(client: Garmin, date: str) -> dict[str, Any] | None:
     sleep = sleep_summary(client, date)
     bb_delta = sleep["bb_delta"]
@@ -342,6 +388,23 @@ def main() -> int:
 
         if index < len(dates) - 1:
             time.sleep(1)  # stay well under Garmin's rate limit
+
+    # Only ever about the newest night asked for: the backfill pass must not
+    # raise a gap for a day that is long past and never coming.
+    newest = dates[-1]
+    if data["days"].get(newest, {}).get("sleepScore") is not None:
+        if data.pop("gap", None) is not None:
+            changed += 1
+            print(f"{newest} arrived, cleared the gap note.")
+    else:
+        gap = diagnose_gap(client, newest)
+        # No checkedAt inside: the note stays byte-identical run after run until
+        # the watch actually does something, so a gap day does not turn into a
+        # commit per run. The commit itself carries the time.
+        if gap and data.get("gap") != gap:
+            data["gap"] = gap
+            changed += 1
+            print(f"{newest} missing: {gap['reason']}")
 
     if changed:
         # Stamped only on a real change, so an unchanged file stays byte-identical
