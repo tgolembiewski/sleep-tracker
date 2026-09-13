@@ -889,6 +889,16 @@ function openSettings() {
       <label for="dataurl">Adres pliku data.json</label>
       <input type="url" id="dataurl" value="${state.settings.dataUrl}">
     </div>
+    <div class="field">
+      <label for="ghtoken">Token GitHub (dla przycisku ⟳)</label>
+      <input type="password" id="ghtoken" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false"
+             value="${state.settings.githubToken ? '········' : ''}"
+             placeholder="wklej token, aby odświeżać na żądanie">
+    </div>
+    <p class="hint">Bez tokenu ⟳ tylko wczytuje to, co już opublikowano. Z tokenem
+    uruchamia pobranie z Garmina od razu. Token zostaje na tym urządzeniu — nie ma
+    go w kodzie strony. Zobacz <b>Jak odnowić?</b> poniżej, jeśli nie wiesz, skąd go wziąć.</p>
     <p class="hint">${garmin.generatedAt
       ? 'Ostatnia aktualizacja: ' + new Date(garmin.generatedAt).toLocaleString('pl-PL')
       : 'Nie wczytano jeszcze żadnych danych.'}</p>
@@ -928,6 +938,16 @@ function openSettings() {
     save();
     render();
     scrollToToday(false);
+  });
+
+  sheet.querySelector('#ghtoken').addEventListener('change', (event) => {
+    const value = event.target.value.trim();
+    /* The masked placeholder means "unchanged", so only a real edit counts. */
+    if (value === '········') return;
+    state.settings.githubToken = value;
+    save();
+    toast(value ? 'Token zapisany na tym urządzeniu' : 'Token usunięty');
+    event.target.value = value ? '········' : '';
   });
 
   sheet.querySelector('#dataurl').addEventListener('change', (event) => {
@@ -1102,6 +1122,107 @@ async function importSeed(announce) {
 }
 
 /* ------------------------------------------------------------ garmin data */
+
+/* ------------------------------------------------------- sync on demand */
+
+const DISPATCH_URL =
+  'https://api.github.com/repos/tgolembiewski/sleep-tracker/actions/workflows/garmin-sync.yml/dispatches';
+const POLL_EVERY = 8000;
+const POLL_LIMIT = 120000;
+
+/* Asking GitHub to run the sync now, straight from the browser - the API sends
+   Access-Control-Allow-Origin: *, so no middleman is needed. The token is the
+   user's own, typed into Settings on each device and kept in localStorage; it
+   is never part of the published page, which anyone can read. */
+async function dispatchSync(token) {
+  const response = await fetch(DISPATCH_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ref: 'main', inputs: { days: '1' } }),
+  });
+
+  if (response.status === 204) return;  /* success carries no body */
+
+  /* Never let the token itself reach a message. */
+  if (response.status === 401) throw new Error('Token odrzucony — wygasł lub jest błędny');
+  if (response.status === 403) throw new Error('Token bez uprawnień (Actions: Read and write)');
+  if (response.status === 404) throw new Error('Nie znaleziono repozytorium lub workflow');
+  throw new Error(`GitHub odpowiedział HTTP ${response.status}`);
+}
+
+async function fetchGarminFile() {
+  const url = state.settings.dataUrl
+    + (state.settings.dataUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+function applyGarmin(data) {
+  garmin = {
+    generatedAt: data.generatedAt || null,
+    days: data.days || {},
+    tokenExpires: data.tokenExpires || null,
+    gap: data.gap || null,
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY + '.garmin', JSON.stringify(garmin));
+  } catch (error) {
+    console.warn('Nie udało się zapisać kopii danych Garmina', error);
+  }
+  render();
+}
+
+let syncing = false;
+
+/* Fire the workflow, then watch data.json until the run publishes something
+   new. The run itself takes about a minute, but a scheduled run already in
+   flight holds the concurrency group and ours waits its turn, so the window
+   is generous and a timeout is not a failure. */
+async function syncNow() {
+  if (syncing) return;
+  const token = (state.settings.githubToken || '').trim();
+  if (!token) { loadGarmin(true); return; }
+
+  const button = document.getElementById('refresh');
+  syncing = true;
+  button.dataset.busy = 'true';
+
+  try {
+    await dispatchSync(token);
+    toast('Synchronizacja uruchomiona…');
+
+    const before = garmin.generatedAt;
+    const deadline = Date.now() + POLL_LIMIT;
+
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_EVERY));
+      try {
+        const data = await fetchGarminFile();
+        if (data.generatedAt && data.generatedAt !== before) {
+          applyGarmin(data);
+          toast('Dane z Garmina odświeżone');
+          return;
+        }
+      } catch (error) {
+        /* One failed poll is not the end of the run; keep waiting. */
+        console.warn('Sprawdzenie danych nie powiodło się', error);
+      }
+    }
+    toast('Synchronizacja trwa dłużej — sprawdź za chwilę');
+  } catch (error) {
+    toast(error.message);
+    console.warn('Nie udało się uruchomić synchronizacji', error);
+  } finally {
+    syncing = false;
+    button.dataset.busy = 'false';
+  }
+}
 
 async function loadGarmin(announce) {
   const button = document.getElementById('refresh');
@@ -1530,7 +1651,7 @@ document.addEventListener('scroll', (event) => {
 document.getElementById('print').addEventListener('click', openPrint);
 document.getElementById('open-settings').addEventListener('click', openSettings);
 document.getElementById('tokenbar').addEventListener('click', openTokenHelp);
-document.getElementById('refresh').addEventListener('click', () => loadGarmin(true));
+document.getElementById('refresh').addEventListener('click', syncNow);
 wideScreen.addEventListener('change', render);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) loadGarmin(false);
