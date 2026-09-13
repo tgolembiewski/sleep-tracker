@@ -175,14 +175,19 @@
       "sleepSeconds": 20880,
       "sleepStart": "02:13",
       "steps": 10844
+    },
+    "2026-09-13": {
+      "bbDelta": null,
+      "sleepScore": null,
+      "steps": 325
     }
   },
   "gap": {
     "date": "2026-09-13",
     "device": "vívoactive 5",
-    "deviceLastUpload": "2026-09-12T17:22:51+00:00",
-    "reason": "watch-not-synced"
+    "deviceLastUpload": "2026-09-13T08:40:48+00:00",
+    "reason": "not-recorded"
   },
-  "generatedAt": "2026-09-13T07:36:08+00:00",
+  "generatedAt": "2026-09-13T08:43:07+00:00",
   "tokenExpires": "2026-10-10"
 }
