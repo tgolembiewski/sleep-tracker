@@ -25,6 +25,10 @@ on:
         description: "How many trailing days to refetch"
         required: false
         default: "7"
+      skip:
+        description: "Skip contacting Garmin when the days are already on file"
+        required: false
+        default: "false"
 
 concurrency:
   group: garmin-sync
@@ -50,7 +54,14 @@ jobs:
         id: window
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "args=--days ${{ inputs.days }}" >> "$GITHUB_OUTPUT"
+            # An automated trigger fires several times a morning to cover a
+            # late watch sync, so it asks to short-circuit once the night is
+            # on file. A person tapping refresh means it, and does not.
+            if [ "${{ inputs.skip }}" = "true" ]; then
+              echo "args=--days ${{ inputs.days }} --skip-if-complete" >> "$GITHUB_OUTPUT"
+            else
+              echo "args=--days ${{ inputs.days }}" >> "$GITHUB_OUTPUT"
+            fi
           elif [ "${{ github.event.schedule }}" = "0 15 * * *" ]; then
             echo "args=--days 7" >> "$GITHUB_OUTPUT"
           else
