@@ -180,14 +180,19 @@
       "bbDelta": null,
       "sleepScore": null,
       "steps": 2768
+    },
+    "2026-09-14": {
+      "bbDelta": 29,
+      "bbEnd": 34,
+      "bbStart": 5,
+      "qualifier": "POOR",
+      "sleepEnd": "08:23",
+      "sleepScore": 46,
+      "sleepSeconds": 21720,
+      "sleepStart": "02:21",
+      "steps": 1930
     }
   },
-  "gap": {
-    "date": "2026-09-13",
-    "device": "vívoactive 5",
-    "deviceLastUpload": "2026-09-13T23:22:15+00:00",
-    "reason": "not-recorded"
-  },
-  "generatedAt": "2026-09-13T23:25:13+00:00",
+  "generatedAt": "2026-09-14T10:03:07+00:00",
   "tokenExpires": "2026-10-10"
 }
