@@ -1183,11 +1183,16 @@ let syncing = false;
 /* Fire the workflow, then watch data.json until the run publishes something
    new. The run itself takes about a minute, but a scheduled run already in
    flight holds the concurrency group and ours waits its turn, so the window
-   is generous and a timeout is not a failure. */
-async function syncNow() {
+   is generous and a timeout is not a failure.
+
+   `quiet` is for the run the app starts by itself: the dimmed refresh button
+   is signal enough, and an error nobody asked for should not interrupt
+   anything. Arriving data still announces itself either way. */
+async function syncNow(options) {
   if (syncing) return;
+  const quiet = Boolean(options && options.quiet);
   const token = (state.settings.githubToken || '').trim();
-  if (!token) { loadGarmin(true); return; }
+  if (!token) { if (!quiet) loadGarmin(true); return; }
 
   const button = document.getElementById('refresh');
   syncing = true;
@@ -1195,7 +1200,7 @@ async function syncNow() {
 
   try {
     await dispatchSync(token);
-    toast('Synchronizacja uruchomiona…');
+    if (!quiet) toast('Synchronizacja uruchomiona…');
 
     const before = garmin.generatedAt;
     const deadline = Date.now() + POLL_LIMIT;
@@ -1214,14 +1219,60 @@ async function syncNow() {
         console.warn('Sprawdzenie danych nie powiodło się', error);
       }
     }
-    toast('Synchronizacja trwa dłużej — sprawdź za chwilę');
+    if (!quiet) toast('Synchronizacja trwa dłużej — sprawdź za chwilę');
   } catch (error) {
-    toast(error.message);
+    if (!quiet) toast(error.message);
     console.warn('Nie udało się uruchomić synchronizacji', error);
   } finally {
     syncing = false;
     button.dataset.busy = 'false';
   }
+}
+
+const AUTO_KEY = STORAGE_KEY + '.lastAutoSync';
+const AUTO_COOLDOWN = 20 * 60 * 1000;
+const AUTO_EARLIEST_HOUR = 6;
+
+/* Whether opening the app should go and fetch the night by itself.
+
+   An installed app is resumed far more often than it is opened, so every
+   guard here exists to stop that turning into a stream of pointless runs:
+   nothing to fetch, too early for the night to exist, a night Garmin has
+   already said was never recorded, or simply too soon after the last try. */
+function shouldAutoSync() {
+  if (!(state.settings.githubToken || '').trim()) return false;
+
+  const today = todayISO();
+  const newest = newestGarminDate();
+  if (newest && newest >= today) return false;
+
+  // Before dawn the night is not over yet, so there is nothing to ask for.
+  if (new Date().getHours() < AUTO_EARLIEST_HOUR) return false;
+
+  // Garmin has already told us this night does not exist. It will not appear
+  // later, and asking again every time the app is opened would be noise.
+  const gap = garmin.gap;
+  if (gap && gap.date === today && gap.reason === 'not-recorded') return false;
+
+  let last = 0;
+  try {
+    last = Number(localStorage.getItem(AUTO_KEY)) || 0;
+  } catch (error) {
+    /* No storage: fall through and allow it, at worst one run per launch. */
+  }
+  return Date.now() - last > AUTO_COOLDOWN;
+}
+
+/* Deliberately not awaited by the caller: the interface is already drawn from
+   the cached copy, and the run takes a minute it should not be waiting on. */
+function autoSync() {
+  if (!shouldAutoSync()) return;
+  try {
+    localStorage.setItem(AUTO_KEY, String(Date.now()));
+  } catch (error) {
+    console.warn('Nie udało się zapisać czasu synchronizacji', error);
+  }
+  syncNow({ quiet: true });
 }
 
 async function loadGarmin(announce) {
@@ -1654,7 +1705,7 @@ document.getElementById('tokenbar').addEventListener('click', openTokenHelp);
 document.getElementById('refresh').addEventListener('click', syncNow);
 wideScreen.addEventListener('change', render);
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) loadGarmin(false);
+  if (!document.hidden) loadGarmin(false).then(autoSync);
 });
 
 // Hide the interface up front so it never flashes before the gate appears.
@@ -1670,7 +1721,9 @@ passGate().then(() => {
   requestAnimationFrame(() => scrollToToday(false));
 
   if (freshInstall) importSeed(false);
-  loadGarmin(false);
+  // Read what is published first, then decide whether it is worth asking
+  // GitHub for more. Neither step holds up the interface.
+  loadGarmin(false).then(autoSync);
 });
 
 if ('serviceWorker' in navigator) {
