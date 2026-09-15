@@ -190,7 +190,7 @@
       "sleepScore": 46,
       "sleepSeconds": 21720,
       "sleepStart": "02:21",
-      "steps": 13120
+      "steps": 13287
     },
     "2026-09-15": {
       "bbDelta": 27,
@@ -201,9 +201,9 @@
       "sleepScore": 53,
       "sleepSeconds": 22860,
       "sleepStart": "01:57",
-      "steps": 2031
+      "steps": 2941
     }
   },
-  "generatedAt": "2026-09-15T08:55:46+00:00",
+  "generatedAt": "2026-09-15T09:59:21+00:00",
   "tokenExpires": "2026-10-10"
 }
