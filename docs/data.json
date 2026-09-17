@@ -196,6 +196,7 @@
       "bbDelta": 27,
       "bbEnd": 32,
       "bbStart": 5,
+      "cycleDayEnc": "xC/aAfEjijx7mZrWTyhP/mBo+v2zPFF7T3OU8pmU",
       "qualifier": "POOR",
       "sleepEnd": "08:27",
       "sleepScore": 53,
@@ -207,6 +208,7 @@
       "bbDelta": 32,
       "bbEnd": 37,
       "bbStart": 5,
+      "cycleDayEnc": "tw7/Vs+nsWBkjmVZI16oNkJVUe9LYUgNX/Ep1XfT",
       "qualifier": "FAIR",
       "sleepEnd": "08:33",
       "sleepScore": 70,
@@ -218,6 +220,7 @@
       "bbDelta": 42,
       "bbEnd": 46,
       "bbStart": 5,
+      "cycleDayEnc": "VB/g571FWbdTp1HkD4Ko8NqMoil13vPlT/4ts6wc",
       "qualifier": "FAIR",
       "sleepEnd": "08:57",
       "sleepScore": 66,
@@ -226,6 +229,14 @@
       "steps": 2937
     }
   },
-  "generatedAt": "2026-09-17T09:09:13+00:00",
+  "enc": {
+    "cipher": "AES-256-GCM",
+    "field": "cycleDayEnc",
+    "iterations": 310000,
+    "kdf": "PBKDF2-HMAC-SHA256",
+    "layout": "base64(12-byte nonce || ciphertext || tag)",
+    "saltFrom": "gate.json + 'sen-data'"
+  },
+  "generatedAt": "2026-09-17T09:13:04+00:00",
   "tokenExpires": "2026-10-10"
 }
