@@ -85,6 +85,7 @@ button { cursor: pointer; }
   position: sticky;
   top: 0;
   z-index: 30;
+  transition: transform .2s ease;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -107,6 +108,16 @@ button { cursor: pointer; }
 }
 
 .topbar .meta .stale { color: var(--warn); }
+
+/* Scrolling down hands the height back to the table; scrolling up brings the
+   bar straight back. The week buttons sit at the same sticky offset, so they
+   simply take the top edge while the bar is away - which also stops them
+   disappearing underneath it, as they did before. */
+:root[data-header="hidden"] .topbar { transform: translateY(-100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar { transition: none; }
+}
 .sheet .hint.stale { color: var(--warn); }
 
 /* Sits between the header and the week bar, so a dead Garmin token is the

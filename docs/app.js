@@ -1879,6 +1879,40 @@ document.getElementById('print').addEventListener('click', openPrint);
 document.getElementById('open-settings').addEventListener('click', openSettings);
 document.getElementById('tokenbar').addEventListener('click', openTokenHelp);
 document.getElementById('refresh').addEventListener('click', syncNow);
+/* Auto-hiding top bar. Deliberately plain: a threshold so a stray pixel of
+   movement cannot flicker it, and a floor so it never hides while the top of
+   the page is still in view. */
+(() => {
+  const HIDE_AFTER = 64;   // don't hide until the bar has been scrolled past
+  const DEADZONE = 6;      // ignore twitch, including iOS rubber-banding
+  const root = document.documentElement;
+  let last = window.scrollY;
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    const y = Math.max(0, window.scrollY);
+    const moved = y - last;
+
+    if (Math.abs(moved) < DEADZONE) return;
+    // Any sheet on screen owns the view; moving the bar under it looks broken.
+    if (!document.getElementById('overlay').hidden) return;
+
+    if (y <= HIDE_AFTER || moved < 0) {
+      delete root.dataset.header;
+    } else {
+      root.dataset.header = 'hidden';
+    }
+    last = y;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+})();
+
 wideScreen.addEventListener('change', render);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) loadGarmin(false).then(autoSync);
