@@ -336,6 +336,8 @@ function renderMeta() {
      when the sync last ran, which looks healthy even while the night that
      matters never arrived. */
   if (stamp && newest && newest < todayISO()) {
+    // Phones hide this line to buy height; a warning has to override that.
+    meta.dataset.warn = 'true';
     meta.textContent = parts.join(' · ') + ' · ';
     const warn = document.createElement('span');
     warn.className = 'stale';
@@ -344,6 +346,7 @@ function renderMeta() {
     return;
   }
 
+  delete meta.dataset.warn;
   parts.push(stamp ? `Garmin: ${stamp}` : 'Garmin: brak danych');
   meta.textContent = parts.join(' · ');
 }
@@ -525,26 +528,37 @@ function renderGrid() {
     head.appendChild(weekRow);
   }
 
+  // Two header rows cost twice the height; on a phone the weekday and the
+  // date share one line instead.
+  const oneHeaderRow = !wideScreen.matches;
   const nameRow = document.createElement('tr');
-  nameRow.appendChild(headCell('th', 'Dzień', 'rowhead'));
+  nameRow.appendChild(headCell('th', oneHeaderRow ? 'Nawyk \\ data' : 'Dzień', 'rowhead'));
   const numRow = document.createElement('tr');
-  numRow.appendChild(headCell('th', 'Nawyk \\ data', 'rowhead'));
+  if (!oneHeaderRow) numRow.appendChild(headCell('th', 'Nawyk \\ data', 'rowhead'));
 
   dates.forEach((date, index) => {
     const parsed = fromISO(date);
     const sunday = parsed.getDay() === 0;
     const isToday = date === today;
     const starts = index % 7 === 0 && index > 0;
-    const name = headCell('th', DAY_NAMES[parsed.getDay()],
-      `dayname${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}${starts ? ' weekstart' : ''}`);
-    const num = headCell('th', String(parsed.getDate()),
-      `daynum${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}${starts ? ' weekstart' : ''}`);
-    nameRow.appendChild(name);
-    numRow.appendChild(num);
+    const marks = `${sunday ? ' sunday' : ''}${isToday ? ' today' : ''}${starts ? ' weekstart' : ''}`;
+
+    if (oneHeaderRow) {
+      // Still carries the daynum class: the scroll snapping and the week jumps
+      // both measure from it.
+      const cell = headCell('th', '', `daynum${marks}`);
+      cell.innerHTML = `<span class="dow">${DAY_NAMES[parsed.getDay()]}</span>`
+        + `<span class="dom">${parsed.getDate()}</span>`;
+      nameRow.appendChild(cell);
+      return;
+    }
+
+    nameRow.appendChild(headCell('th', DAY_NAMES[parsed.getDay()], `dayname${marks}`));
+    numRow.appendChild(headCell('th', String(parsed.getDate()), `daynum${marks}`));
   });
 
   head.appendChild(nameRow);
-  head.appendChild(numRow);
+  if (!oneHeaderRow) head.appendChild(numRow);
   table.appendChild(head);
 
   const body = document.createElement('tbody');
@@ -669,7 +683,23 @@ function renderGrid() {
   table.appendChild(body);
 }
 
-function summaryRow(title, dates, today, build, sectionStart, readOnly) {
+/* The label column is 92px on a phone, so a full title wraps to two or three
+   lines and the row grows with it. The short form is the same row named for
+   the narrow column; the legend under the table carries the long explanation
+   either way. */
+const SHORT_LABELS = {
+  'Energia rano (1–5)': 'Energia rano',
+  'Garmin Sleep Score (0–100)': 'Sleep Score',
+  'Body Battery – wpływ netto snu (+/−)': 'Body Battery',
+  'Sen: zaśnięcie / pobudka': 'Sen: zaśn./pob.',
+  'Księżyc: dni do pełni': 'Do pełni',
+  'Notatka dnia': 'Notatka',
+};
+
+function summaryRow(fullTitle, dates, today, build, sectionStart, readOnly) {
+  const title = wideScreen.matches
+    ? fullTitle
+    : (SHORT_LABELS[fullTitle] || fullTitle);
   const row = document.createElement('tr');
   row.className = `summary${sectionStart ? ' section-start' : ''}`;
   const head = document.createElement('td');
