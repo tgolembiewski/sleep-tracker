@@ -74,6 +74,8 @@ jobs:
       - name: Fetch sleep score and body battery
         env:
           GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
+          # Encrypts the cycle day. Absent, the row simply stays empty.
+          APP_PASSPHRASE: ${{ secrets.APP_PASSPHRASE }}
         run: python scripts/fetch_garmin.py ${{ steps.window.outputs.args }}
 
       - name: Commit updated data
