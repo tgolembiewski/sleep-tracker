@@ -213,8 +213,19 @@
       "sleepSeconds": 24660,
       "sleepStart": "01:42",
       "steps": 9137
+    },
+    "2026-09-17": {
+      "bbDelta": 42,
+      "bbEnd": 46,
+      "bbStart": 5,
+      "qualifier": "FAIR",
+      "sleepEnd": "08:57",
+      "sleepScore": 66,
+      "sleepSeconds": 24333,
+      "sleepStart": "02:01",
+      "steps": 150
     }
   },
-  "generatedAt": "2026-09-16T18:46:22+00:00",
+  "generatedAt": "2026-09-17T07:32:19+00:00",
   "tokenExpires": "2026-10-10"
 }
