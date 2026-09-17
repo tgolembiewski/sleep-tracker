@@ -361,6 +361,10 @@ td.day {
 td.day.today { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 td.day.inactive { background: var(--inactive); }
 td.day.future { opacity: .55; }
+/* No pointer, no press feedback: a future day should not look pressable. */
+td.day.future .cell { cursor: default; }
+
+.notes button:disabled { opacity: .45; cursor: default; }
 
 tr.summary td.rowhead,
 tr.summary td.day { background: var(--cream); }

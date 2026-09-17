@@ -264,6 +264,14 @@ function weekOfDate(date) {
   return index < 0 ? 1 : Math.floor(index / 7) + 1;
 }
 
+/* A day that has not happened yet takes no entries. The guard lives on the
+   data side as well as the view side: the buttons are never built for those
+   days, and the functions behind them refuse anyway, so a stale render or a
+   keyboard shortcut cannot write into next week. */
+function isFuture(date) {
+  return date > todayISO();
+}
+
 function scoreClass(score) {
   if (score === null) return 'empty';
   if (score < 60) return 'e1';
@@ -576,7 +584,13 @@ function renderGrid() {
       const starts = dates.indexOf(date) % 7 === 0 && dates.indexOf(date) > 0;
       cell.className = `day${active ? '' : ' inactive'}${date === today ? ' today' : ''}`
         + `${date > today ? ' future' : ''}${starts ? ' weekstart' : ''}`;
-      if (active) {
+      if (active && isFuture(date)) {
+        // Shown, but as a reading rather than a control.
+        const box = document.createElement('div');
+        box.className = 'cell';
+        box.innerHTML = '<span class="check off">·</span>';
+        cell.appendChild(box);
+      } else if (active) {
         const mark = habitState(date, habit.id);
         const button = document.createElement('button');
         button.type = 'button';
@@ -715,7 +729,7 @@ function summaryRow(fullTitle, dates, today, build, sectionStart, readOnly) {
     const spec = build(date);
     const body = spec.html || `<span class="value ${spec.className}">${spec.text}</span>`;
 
-    if (readOnly) {
+    if (readOnly || isFuture(date)) {
       const box = document.createElement('div');
       box.className = 'cell';
       box.innerHTML = body;
@@ -741,13 +755,15 @@ function renderNotes() {
   weekDates().forEach((date) => {
     const record = dayRecord(date, false);
     const text = record && record.note ? record.note.trim() : '';
+    const future = isFuture(date);
     const button = document.createElement('button');
     button.type = 'button';
+    button.disabled = future;
     button.innerHTML =
       `<span class="when">${DAY_NAMES[fromISO(date).getDay()]} ${fromISO(date).getDate()}</span>` +
       `<span class="what${text ? '' : ' empty'}"></span>`;
-    button.querySelector('.what').textContent = text || 'Dodaj notatkę…';
-    button.addEventListener('click', () => openNote(date));
+    button.querySelector('.what').textContent = text || (future ? '—' : 'Dodaj notatkę…');
+    if (!future) button.addEventListener('click', () => openNote(date));
     container.appendChild(button);
   });
 }
@@ -800,6 +816,7 @@ function render() {
 
 /* empty → done → missed → empty */
 function toggleHabit(date, habitId) {
+  if (isFuture(date)) return;
   const record = dayRecord(date, true);
   const current = record.checks[habitId];
 
@@ -855,6 +872,7 @@ function toast(message) {
 }
 
 function openEnergy(date) {
+  if (isFuture(date)) return;
   const record = dayRecord(date, false);
   const current = record && record.energy ? record.energy : null;
   const labels = ['Wyczerpany', 'Ospały', 'Średnio', 'Dobrze', 'W pełni wypoczęty'];
@@ -887,6 +905,7 @@ function openEnergy(date) {
 }
 
 function openNumber(date, key) {
+  if (isFuture(date)) return;
   const isScore = key === 'sleepScore';
   const record = dayRecord(date, false);
   const manual = record && record[key] !== undefined ? record[key] : null;
@@ -931,6 +950,7 @@ function openNumber(date, key) {
 }
 
 function openNote(date) {
+  if (isFuture(date)) return;
   const record = dayRecord(date, false);
   const text = record && record.note ? record.note : '';
 
