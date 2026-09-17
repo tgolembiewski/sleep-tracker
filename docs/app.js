@@ -18,6 +18,7 @@ const SEED_URL = './seed.json';
 const GATE_URL = './gate.json';
 const UNLOCK_KEY = `${STORAGE_KEY}.unlocked`;
 const GATE_CACHE_KEY = `${STORAGE_KEY}.gate`;
+const DATA_KEY_KEY = `${STORAGE_KEY}.datakey`;
 
 /* ------------------------------------------------------------------ dates */
 
@@ -44,6 +45,51 @@ function todayISO() {
 function longDate(iso) {
   const date = fromISO(iso);
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/* ------------------------------------------------------------------- moon */
+
+/* Full moon times from Meeus, Astronomical Algorithms ch. 49. The textbook
+   mean-phase formula is simpler but runs up to 17 hours off, which in 2026
+   alone puts the full moon on the wrong calendar day six times out of nine -
+   visible to anyone who looks up at the sky. */
+function fullMoonUTC(k) {
+  const kk = k + 0.5;
+  const T = kk / 1236.85;
+  const rad = Math.PI / 180;
+  let jde = 2451550.09766 + 29.530588861 * kk + 0.00015437 * T * T
+    - 0.000000150 * T ** 3 + 0.00000000073 * T ** 4;
+
+  const M = (2.5534 + 29.10535670 * kk - 0.0000014 * T * T) * rad;
+  const Mp = (201.5643 + 385.81693528 * kk + 0.0107582 * T * T) * rad;
+  const F = (160.7108 + 390.67050284 * kk - 0.0016118 * T * T) * rad;
+  const E = 1 - 0.002516 * T - 0.0000074 * T * T;
+
+  jde += -0.40614 + 0.17302 * E * Math.cos(M) + 0.01614 * Math.cos(2 * Mp)
+    + 0.01043 * Math.cos(2 * F) + 0.00734 * E * Math.cos(Mp - M)
+    - 0.00515 * E * Math.cos(Mp + M) + 0.00209 * E * E * Math.cos(2 * M)
+    - 0.00111 * Math.cos(Mp - 2 * F) - 0.00057 * Math.cos(Mp + 2 * F)
+    + 0.00056 * E * Math.cos(2 * Mp + M) - 0.00042 * Math.cos(3 * Mp)
+    + 0.00042 * E * Math.cos(M + 2 * F) + 0.00038 * E * Math.cos(M - 2 * F);
+  jde += 0.000325 * Math.sin((299.77 + 0.107408 * kk) * rad);
+
+  return new Date((jde - 2440587.5) * 86400000);
+}
+
+/* Whole days from `iso` to the next full moon, 0 on the night itself. Counted
+   between local calendar dates, so it matches what the sky does here rather
+   than what UTC says. */
+function daysToFullMoon(iso) {
+  const day = fromISO(iso);
+  // One lunation back, to be sure the search starts before the answer.
+  let k = Math.floor((day.getTime() / 86400000 - 10957) / 29.530588853) - 1;
+  for (let step = 0; step < 4; step += 1, k += 1) {
+    const full = fullMoonUTC(k);
+    const localDate = fromISO(toISO(full));
+    const diff = Math.round((localDate - day) / 86400000);
+    if (diff >= 0) return diff;
+  }
+  return null;
 }
 
 /* ------------------------------------------------------------------ state */
@@ -592,6 +638,25 @@ function renderGrid() {
     };
   }, false, true));
 
+  body.appendChild(summaryRow('Dzień cyklu', dates, today, (date) => {
+    const day = cycleDays[date];
+    return {
+      html: day === undefined
+        ? '<span class="value empty">·</span>'
+        : `<span class="value cycle">${day}</span>`,
+    };
+  }, false, true));
+
+  body.appendChild(summaryRow('Księżyc: dni do pełni', dates, today, (date) => {
+    const left = daysToFullMoon(date);
+    if (left === null) return { html: '<span class="value empty">·</span>' };
+    return {
+      html: left === 0
+        ? '<span class="value moon full">\u25CF</span>'
+        : `<span class="value moon">${left}</span>`,
+    };
+  }, false, true));
+
   body.appendChild(summaryRow('Notatka dnia', dates, today, (date) => {
     const record = dayRecord(date, false);
     const filled = Boolean(record && record.note && record.note.trim());
@@ -861,6 +926,25 @@ function openNote(date) {
   });
 }
 
+/* The cycle day fails quietly by design - it is one row, not the app - so
+   Settings is where the reason has to be findable. */
+function cycleHint() {
+  const status = garmin.cycle && garmin.cycle.status;
+  if (status === 'passphrase-mismatch') {
+    return '<p class="hint stale">Sekret APP_PASSPHRASE nie zgadza się z hasłem'
+      + ' aplikacji — dzień cyklu nie jest zapisywany.</p>';
+  }
+  if (status === 'no-gate') {
+    return '<p class="hint stale">Brak gate.json — dzień cyklu nie jest szyfrowany'
+      + ' ani zapisywany.</p>';
+  }
+  if (cycleKeyBad) {
+    return '<p class="hint stale">Nie udało się odszyfrować dnia cyklu na tym'
+      + ' urządzeniu — hasło zmieniło się po ostatnim odblokowaniu.</p>';
+  }
+  return '';
+}
+
 function openSettings() {
   const current = cycle();
 
@@ -902,6 +986,7 @@ function openSettings() {
     <p class="hint">${garmin.generatedAt
       ? 'Ostatnia aktualizacja: ' + new Date(garmin.generatedAt).toLocaleString('pl-PL')
       : 'Nie wczytano jeszcze żadnych danych.'}</p>
+    ${cycleHint()}
     ${garmin.tokenExpires ? `<p class="hint">Dostęp do Garmina ważny do:
       <b>${longDate(garmin.tokenExpires)}</b>.
       <button class="linkish" type="button" data-action="token-help">Jak odnowić?</button></p>` : ''}
@@ -1163,18 +1248,20 @@ async function fetchGarminFile() {
   return response.json();
 }
 
-function applyGarmin(data) {
+async function applyGarmin(data) {
   garmin = {
     generatedAt: data.generatedAt || null,
     days: data.days || {},
     tokenExpires: data.tokenExpires || null,
     gap: data.gap || null,
+    cycle: data.cycle || null,
   };
   try {
     localStorage.setItem(STORAGE_KEY + '.garmin', JSON.stringify(garmin));
   } catch (error) {
     console.warn('Nie udało się zapisać kopii danych Garmina', error);
   }
+  await decryptCycle();
   render();
 }
 
@@ -1282,19 +1369,7 @@ async function loadGarmin(announce) {
     const url = state.settings.dataUrl + (state.settings.dataUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    garmin = {
-      generatedAt: data.generatedAt || null,
-      days: data.days || {},
-      tokenExpires: data.tokenExpires || null,
-      gap: data.gap || null,
-    };
-    try {
-      localStorage.setItem(STORAGE_KEY + '.garmin', JSON.stringify(garmin));
-    } catch (error) {
-      console.warn('Nie udało się zapisać kopii danych Garmina', error);
-    }
-    render();
+    await applyGarmin(await response.json());
     if (announce) toast('Dane z Garmina odświeżone');
   } catch (error) {
     console.warn('Nie udało się pobrać data.json', error);
@@ -1304,13 +1379,14 @@ async function loadGarmin(announce) {
   }
 }
 
-function loadCachedGarmin() {
+async function loadCachedGarmin() {
   try {
     const cached = localStorage.getItem(STORAGE_KEY + '.garmin');
     if (cached) garmin = JSON.parse(cached);
   } catch (error) {
     console.warn('Brak zapisanej kopii danych Garmina', error);
   }
+  await decryptCycle();
 }
 
 /* ------------------------------------------------------------------ print */
@@ -1595,6 +1671,75 @@ async function loadGateConfig() {
   }
 }
 
+/* The key for the encrypted cycle day. Derived from the passphrase again with
+   a different salt rather than from the verifier, because the verifier is the
+   hash published in gate.json - anything derived from that is derivable by
+   anyone who fetches the file. Kept as raw bytes so later launches do not have
+   to ask for the passphrase again, exactly like the unlock flag beside it. */
+async function deriveDataKey(passphrase, config) {
+  const encoder = new TextEncoder();
+  const base = Uint8Array.from(atob(config.salt), (char) => char.charCodeAt(0));
+  const suffix = encoder.encode('sen-data');
+  const salt = new Uint8Array(base.length + suffix.length);
+  salt.set(base);
+  salt.set(suffix, base.length);
+
+  const material = await crypto.subtle.importKey(
+    'raw', encoder.encode(passphrase), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: config.iterations, hash: 'SHA-256' },
+    material,
+    256
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+
+let dataKey = null;
+
+async function loadDataKey() {
+  let stored = null;
+  try {
+    stored = localStorage.getItem(DATA_KEY_KEY);
+  } catch (error) {
+    return;
+  }
+  if (!stored || !crypto.subtle) return;
+  try {
+    const raw = Uint8Array.from(atob(stored), (char) => char.charCodeAt(0));
+    dataKey = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+  } catch (error) {
+    console.warn('Nie udało się wczytać klucza danych', error);
+  }
+}
+
+/* Plaintext lives here and nowhere else - never in localStorage, never in a
+   log. Rebuilt from the file on every load. */
+let cycleDays = {};
+let cycleKeyBad = false;
+
+async function decryptCycle() {
+  cycleDays = {};
+  cycleKeyBad = false;
+  if (!dataKey) return;
+
+  const decoder = new TextDecoder();
+  for (const [date, day] of Object.entries(garmin.days || {})) {
+    if (!day || !day.cycleDayEnc) continue;
+    try {
+      const raw = Uint8Array.from(atob(day.cycleDayEnc), (char) => char.charCodeAt(0));
+      const plain = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: raw.slice(0, 12) }, dataKey, raw.slice(12)
+      );
+      const value = Number(decoder.decode(plain));
+      if (Number.isFinite(value)) cycleDays[date] = value;
+    } catch (error) {
+      // Wrong key, or the field was tampered with. Say so once, show nothing.
+      cycleKeyBad = true;
+    }
+  }
+}
+
 async function derivePasscode(passphrase, config) {
   const encoder = new TextEncoder();
   const salt = Uint8Array.from(atob(config.salt), (char) => char.charCodeAt(0));
@@ -1647,6 +1792,7 @@ function askForPasscode(config) {
 
       try {
         localStorage.setItem(UNLOCK_KEY, config.hash);
+        localStorage.setItem(DATA_KEY_KEY, await deriveDataKey(input.value, config));
       } catch (failure) {
         console.warn('Nie udało się zapamiętać odblokowania', failure);
       }
@@ -1711,8 +1857,9 @@ document.addEventListener('visibilitychange', () => {
 // Hide the interface up front so it never flashes before the gate appears.
 if (storedUnlock()) document.documentElement.removeAttribute('data-locked');
 
-passGate().then(() => {
-  loadCachedGarmin();
+passGate().then(async () => {
+  await loadDataKey();
+  await loadCachedGarmin();
   pickInitialWeek();
   save();
   render();

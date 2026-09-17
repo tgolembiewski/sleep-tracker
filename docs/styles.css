@@ -107,6 +107,7 @@ button { cursor: pointer; }
 }
 
 .topbar .meta .stale { color: var(--warn); }
+.sheet .hint.stale { color: var(--warn); }
 
 /* Sits between the header and the week bar, so a dead Garmin token is the
    first thing seen rather than something noticed days later. */
@@ -387,6 +388,9 @@ tr.section-start td { border-top: 2px solid var(--rule-strong); }
 .value.pos { color: var(--good); }
 .value.steps { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
 .value.neg { color: var(--bad); }
+.value.cycle { color: var(--accent); font-weight: 700; }
+.value.moon { color: var(--ink-soft); }
+.value.moon.full { color: var(--sunday); font-size: 15px; }
 
 .hours {
   display: grid;

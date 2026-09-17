@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
+import hmac
 import datetime as dt
 import json
+import secrets
 import os
 import sys
 import time
@@ -179,6 +182,72 @@ def day_steps(client: Garmin, date: str) -> int | None:
 
     steps = stats.get("totalSteps")
     return int(steps) if isinstance(steps, (int, float)) else None
+
+
+GATE_FILE = Path(__file__).resolve().parent.parent / "docs" / "gate.json"
+DATA_SALT_SUFFIX = b"sen-data"
+
+
+def cycle_day(client: Garmin, date: str) -> int | None:
+    """Which day of the menstrual cycle `date` falls on, or None.
+
+    Its own request and its own failure path, like the step count: an account
+    with cycle tracking switched off must cost us nothing else.
+    """
+    try:
+        summary = (client.get_menstrual_data_for_date(date) or {}).get("daySummary") or {}
+    except Exception as error:  # noqa: BLE001 - optional, never fatal
+        print(f"  cycle day unavailable for {date}: {error}")
+        return None
+    value = summary.get("dayInCycle")
+    return int(value) if isinstance(value, (int, float)) else None
+
+
+def gate_config() -> dict[str, Any] | None:
+    try:
+        return json.loads(GATE_FILE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - no gate, no encryption
+        return None
+
+
+def data_key(passphrase: str, gate: dict[str, Any]) -> bytes:
+    """The key the app will re-derive after the user types the passphrase.
+
+    Deliberately not derived from the gate verifier: that value is the hash
+    published in gate.json, so anything derived from it is derivable by anyone
+    who fetches the file. Starting again from the passphrase with a different
+    salt keeps the key tied to something that was never published.
+    """
+    salt = base64.b64decode(gate["salt"]) + DATA_SALT_SUFFIX
+    return hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"), salt,
+                               int(gate["iterations"]), 32)
+
+
+def passphrase_matches(passphrase: str, gate: dict[str, Any]) -> bool:
+    """Whether the secret is the same passphrase the app unlocks with."""
+    check = hashlib.pbkdf2_hmac("sha256", passphrase.encode("utf-8"),
+                                base64.b64decode(gate["salt"]),
+                                int(gate["iterations"]), 32)
+    return hmac.compare_digest(base64.b64encode(check).decode("ascii"), gate["hash"])
+
+
+def seal(value: int, key: bytes) -> str:
+    """AES-256-GCM, nonce prepended, the whole thing base64 for JSON."""
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    nonce = secrets.token_bytes(12)
+    sealed = AESGCM(key).encrypt(nonce, str(value).encode("utf-8"), None)
+    return base64.b64encode(nonce + sealed).decode("ascii")
+
+
+def unseal(blob: str, key: bytes) -> int | None:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    try:
+        raw = base64.b64decode(blob)
+        return int(AESGCM(key).decrypt(raw[:12], raw[12:], None).decode("utf-8"))
+    except Exception:  # noqa: BLE001 - wrong key or tampered value
+        return None
 
 
 def diagnose_gap(client: Garmin, date: str) -> dict[str, Any] | None:
@@ -365,6 +434,44 @@ def main() -> int:
 
     data = load_existing(args.output)
     changed = 0
+
+    # The cycle day is the one figure here that should not be legible to
+    # whoever fetches data.json, so it travels encrypted under the same
+    # passphrase that unlocks the app. Everything else is unchanged.
+    gate = gate_config()
+    passphrase = os.environ.get("APP_PASSPHRASE", "")
+    key = None
+    status = None
+    if passphrase and gate:
+        if passphrase_matches(passphrase, gate):
+            key = data_key(passphrase, gate)
+        else:
+            # Loud, but never fatal: the night matters more than the extra row.
+            print("APP_PASSPHRASE does not match docs/gate.json; "
+                  "skipping the cycle day.", file=sys.stderr)
+            status = "passphrase-mismatch"
+    elif passphrase and not gate:
+        status = "no-gate"
+
+    if data.get("cycle", {}).get("status") != status:
+        if status:
+            data["cycle"] = {"status": status}
+        else:
+            data.pop("cycle", None)
+        changed += 1
+
+    if key and data.get("enc") is None:
+        # Describes itself, so the format is readable without the source.
+        data["enc"] = {
+            "field": "cycleDayEnc",
+            "cipher": "AES-256-GCM",
+            "kdf": "PBKDF2-HMAC-SHA256",
+            "iterations": int(gate["iterations"]),
+            "saltFrom": "gate.json + 'sen-data'",
+            "layout": "base64(12-byte nonce || ciphertext || tag)",
+        }
+        changed += 1
+
     if expiry:
         # A plain date, so a run that renews nothing leaves the file
         # byte-identical and the workflow commits nothing.
@@ -380,6 +487,19 @@ def main() -> int:
         if record is None:
             print(f"{date}: no sleep recorded")
             continue
+
+        if key:
+            day = cycle_day(client, date)
+            if day is not None:
+                previous = (data["days"].get(date) or {}).get("cycleDayEnc")
+                # Re-encrypting the same number would produce a different
+                # ciphertext every run - a fresh nonce each time - and commit a
+                # change that is not one. Keep the old blob while it still
+                # decrypts to the same day.
+                record["cycleDayEnc"] = (
+                    previous if previous and unseal(previous, key) == day
+                    else seal(day, key)
+                )
 
         if data["days"].get(date) != record:
             data["days"][date] = record
