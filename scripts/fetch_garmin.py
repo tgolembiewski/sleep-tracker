@@ -355,6 +355,23 @@ def dump_raw(client: Garmin, date: str, path: Path) -> None:
     print(f"Raw responses for {date} written to {path}\n")
 
 
+# Garmin does not publish a night in one piece. The sleep score appears when
+# the watch uploads at wake-up, while the overnight Body Battery series and the
+# day's step total arrive with later syncs - hours later, in practice.
+WANTED_FIELDS = ("sleepScore", "bbDelta", "steps")
+
+
+def day_complete(record: dict[str, Any] | None) -> bool:
+    """Whether there is anything left to fetch for this day.
+
+    Testing the sleep score alone was the bug this replaces: the score landed
+    at 11:54 and every run for the next six hours short-circuited on it, so
+    the Body Battery change and the step count stayed empty until a fetch that
+    was not allowed to skip finally ran.
+    """
+    return bool(record) and all(record.get(field) is not None for field in WANTED_FIELDS)
+
+
 def load_existing(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"generatedAt": None, "days": {}}
@@ -403,11 +420,8 @@ def main() -> int:
         # Lets the morning poll run every quarter of an hour while still hitting
         # Garmin only until the night actually shows up.
         known = load_existing(args.output)
-        if all(
-            (known.get("days", {}).get(date) or {}).get("sleepScore") is not None
-            for date in dates
-        ):
-            print("Every requested day already has a sleep score, nothing to do.")
+        if all(day_complete(known.get("days", {}).get(date)) for date in dates):
+            print("Every requested day is already complete, nothing to do.")
             # A renewed secret must still reach the app today, not whenever the
             # next run happens to have work to do.
             if expiry and known.get("tokenExpires") != expiry:
