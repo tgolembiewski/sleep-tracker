@@ -1379,9 +1379,14 @@ const AUTO_EARLIEST_HOUR = 6;
 function shouldAutoSync() {
   if (!(state.settings.githubToken || '').trim()) return false;
 
+  // Done only once every figure is in. Garmin publishes the score at wake-up
+  // and Body Battery and steps with a later full sync, so a morning with just
+  // the score must keep asking - the same rule as day_complete in the sync.
   const today = todayISO();
-  const newest = newestGarminDate();
-  if (newest && newest >= today) return false;
+  const record = garminFor(today);
+  const complete = record && ['sleepScore', 'bbDelta', 'steps']
+    .every((field) => record[field] !== undefined && record[field] !== null);
+  if (complete) return false;
 
   // Before dawn the night is not over yet, so there is nothing to ask for.
   if (new Date().getHours() < AUTO_EARLIEST_HOUR) return false;
