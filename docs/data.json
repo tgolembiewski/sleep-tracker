@@ -325,13 +325,16 @@
       "steps": 6827
     },
     "2026-09-25": {
-      "bbDelta": null,
+      "bbDelta": 54,
+      "bbEnd": 59,
+      "bbStart": 5,
       "cycleDayEnc": "3OEpPiQ5GZFwPuLezclHaOUPeMpE0Yp0IwPqh4s=",
       "qualifier": "FAIR",
       "sleepEnd": "09:15",
       "sleepScore": 77,
       "sleepSeconds": 25723,
-      "sleepStart": "02:05"
+      "sleepStart": "02:05",
+      "steps": 578
     }
   },
   "enc": {
@@ -342,6 +345,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-09-25T08:38:29+00:00",
+  "generatedAt": "2026-09-25T09:21:38+00:00",
   "tokenExpires": "2026-10-10"
 }
