@@ -29,8 +29,10 @@ async function dispatch(token) {
         'User-Agent': 'sleep-tracker-cron',
       },
       /* Several fires a morning, because no fixed hour can know when the watch
-         will sync - once it has, skip means the rest cost nothing. */
-      body: JSON.stringify({ ref: 'main', inputs: { days: '1', skip: 'true' } }),
+         will sync - once it has, skip means the rest cost nothing. Two days so
+         the fire that fetches today also takes yesterday's final step count,
+         which only reaches Garmin with the morning upload. */
+      body: JSON.stringify({ ref: 'main', inputs: { days: '2', skip: 'true' } }),
     },
   );
 

@@ -1278,7 +1278,10 @@ async function dispatchSync(token) {
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ ref: 'main', inputs: { days: '1' } }),
+    /* Two days, not one: yesterday's steps keep climbing until midnight and
+       only reach Garmin with this morning's upload, so the run that fetches
+       today has to take yesterday's final count with it. */
+    body: JSON.stringify({ ref: 'main', inputs: { days: '2' } }),
   });
 
   if (response.status === 204) return;  /* success carries no body */
