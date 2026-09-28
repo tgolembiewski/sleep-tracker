@@ -1264,6 +1264,27 @@ const DISPATCH_URL =
   'https://api.github.com/repos/tgolembiewski/sleep-tracker/actions/workflows/garmin-sync.yml/dispatches';
 const POLL_EVERY = 8000;
 const POLL_LIMIT = 120000;
+/* A run that lands with only the sleep score is asked again, since Body
+   Battery and steps usually follow within minutes of the watch's full
+   upload. Bounded, so a watch that will not sync for hours does not keep
+   the app dispatching; reopening the app later picks it up from there. */
+const FOLLOW_UP_EVERY = 90000;
+const FOLLOW_UP_LIMIT = 10 * 60 * 1000;
+
+/* Every figure for today is in: sleep score, Body Battery change and steps.
+   The same rule as day_complete in the sync script. */
+function todayComplete() {
+  const record = garminFor(todayISO());
+  return Boolean(record) && ['sleepScore', 'bbDelta', 'steps']
+    .every((field) => record[field] !== undefined && record[field] !== null);
+}
+
+/* Whether a run that just published is worth following with another. */
+function wantsFollowUp() {
+  if (todayComplete() || document.hidden) return false;
+  const gap = garmin.gap;
+  return !(gap && gap.date === todayISO() && gap.reason === 'not-recorded');
+}
 
 /* Asking GitHub to run the sync now, straight from the browser - the API sends
    Access-Control-Allow-Origin: *, so no middleman is needed. The token is the
@@ -1342,17 +1363,25 @@ async function syncNow(options) {
     await dispatchSync(token);
     if (!quiet) toast('Synchronizacja uruchomiona…');
 
-    const before = garmin.generatedAt;
-    const deadline = Date.now() + POLL_LIMIT;
+    const followUpUntil = Date.now() + FOLLOW_UP_LIMIT;
+    let before = garmin.generatedAt;
+    let deadline = Date.now() + POLL_LIMIT;
 
     while (Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, POLL_EVERY));
       try {
         const data = await fetchGarminFile();
         if (data.generatedAt && data.generatedAt !== before) {
-          applyGarmin(data);
+          await applyGarmin(data);
           toast('Dane z Garmina odświeżone');
-          return;
+          // Stopping at the first change left the app showing a morning with
+          // only the score, while the full upload landed two minutes later.
+          if (Date.now() + FOLLOW_UP_EVERY > followUpUntil || !wantsFollowUp()) return;
+          await new Promise((resolve) => setTimeout(resolve, FOLLOW_UP_EVERY));
+          if (!wantsFollowUp()) return;
+          await dispatchSync(token);
+          before = garmin.generatedAt;
+          deadline = Date.now() + POLL_LIMIT;
         }
       } catch (error) {
         /* One failed poll is not the end of the run; keep waiting. */
@@ -1386,10 +1415,7 @@ function shouldAutoSync() {
   // and Body Battery and steps with a later full sync, so a morning with just
   // the score must keep asking - the same rule as day_complete in the sync.
   const today = todayISO();
-  const record = garminFor(today);
-  const complete = record && ['sleepScore', 'bbDelta', 'steps']
-    .every((field) => record[field] !== undefined && record[field] !== null);
-  if (complete) return false;
+  if (todayComplete()) return false;
 
   // Before dawn the night is not over yet, so there is nothing to ask for.
   if (new Date().getHours() < AUTO_EARLIEST_HOUR) return false;
