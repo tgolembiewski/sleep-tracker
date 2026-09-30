@@ -272,6 +272,15 @@ function isFuture(date) {
   return date > todayISO();
 }
 
+/* Garmin's own bands: 0-25 low, 26-50 medium, 51-75 high, 76-100 very high. */
+function batteryClass(level) {
+  if (level === null) return 'empty';
+  if (level <= 25) return 'e1';
+  if (level <= 50) return 'e2';
+  if (level <= 75) return 'e4';
+  return 'e5';
+}
+
 function scoreClass(score) {
   if (score === null) return 'empty';
   if (score < 60) return 'e1';
@@ -645,6 +654,17 @@ function renderGrid() {
     };
   }));
 
+  /* The level itself, next to the change: a night the watch half missed can
+     show a small change and still end at a full battery. */
+  body.appendChild(summaryRow('Body Battery po pobudce (0–100)', dates, today, (date) => {
+    const { value, manual } = resolved(date, 'bbEnd');
+    return {
+      text: value === null ? '·' : String(value),
+      className: `${batteryClass(value)}${manual ? '' : ' auto'}`,
+      onClick: () => openNumber(date, 'bbEnd'),
+    };
+  }));
+
   body.appendChild(summaryRow('Sen: zaśnięcie / pobudka', dates, today, (date) => {
     const auto = garminFor(date);
     if (!auto || !auto.sleepStart || !auto.sleepEnd) {
@@ -705,6 +725,7 @@ const SHORT_LABELS = {
   'Energia rano (1–5)': 'Energia rano',
   'Garmin Sleep Score (0–100)': 'Sleep Score',
   'Body Battery – wpływ netto snu (+/−)': 'Body Battery',
+  'Body Battery po pobudce (0–100)': 'BB rano',
   'Sen: zaśnięcie / pobudka': 'Sen: zaśn./pob.',
   'Księżyc: dni do pełni': 'Do pełni',
   'Notatka dnia': 'Notatka',
@@ -906,7 +927,10 @@ function openEnergy(date) {
 
 function openNumber(date, key) {
   if (isFuture(date)) return;
-  const isScore = key === 'sleepScore';
+  // Both are plain 0-100 levels; only the Body Battery change carries a sign.
+  const isScore = key === 'sleepScore' || key === 'bbEnd';
+  const title = { sleepScore: 'Garmin Sleep Score', bbEnd: 'Body Battery po pobudce' }[key]
+    || 'Body Battery – wpływ netto snu';
   const record = dayRecord(date, false);
   const manual = record && record[key] !== undefined ? record[key] : null;
   const auto = garminFor(date);
@@ -915,11 +939,11 @@ function openNumber(date, key) {
   const autoLine = autoValue === null || autoValue === undefined
     ? 'Garmin nie przysłał jeszcze wartości na ten dzień.'
     : `Z Garmina: <b>${isScore ? autoValue : (autoValue > 0 ? '+' + autoValue : autoValue)}</b>` +
-      (auto && auto.bbStart !== undefined && !isScore
+      (auto && auto.bbStart !== undefined && key !== 'sleepScore'
         ? ` (przy zaśnięciu ${auto.bbStart}, przy pobudce ${auto.bbEnd})` : '');
 
   openSheet(`
-    <h2>${isScore ? 'Garmin Sleep Score' : 'Body Battery – wpływ netto snu'}</h2>
+    <h2>${title}</h2>
     <p class="sheet-sub">${longDate(date)}</p>
     <div class="field">
       <label for="numval">Wartość własna${isScore ? ' (0–100)' : ' (np. 53 lub -12)'}</label>
@@ -1229,7 +1253,7 @@ function applySeed(seed) {
       }
     });
 
-    for (const key of ['energy', 'note', 'sleepScore', 'bbDelta']) {
+    for (const key of ['energy', 'note', 'sleepScore', 'bbDelta', 'bbEnd']) {
       if (entry[key] !== undefined && entry[key] !== null && record[key] === undefined) {
         record[key] = entry[key];
         filled += 1;
@@ -1625,6 +1649,11 @@ function buildPrintSheet(withData) {
     return value > 0 ? `+${value}` : String(value);
   });
 
+  summaryRowFor('Body Battery po pobudce (0–100)', false, (date) => {
+    const { value } = resolved(date, 'bbEnd');
+    return value === null ? '' : String(value);
+  });
+
   const noteRow = document.createElement('tr');
   noteRow.className = 'pnotes';
   const noteLab = document.createElement('th');
@@ -1685,7 +1714,9 @@ function buildPrintSheet(withData) {
     + 'energii — po tygodniu zobaczysz, czy odczucie i dane idą w tę samą stronę (rozjazdy też są '
     + 'ciekawą wskazówką). W wierszu <b>Body Battery – wpływ netto snu</b> jest przyrost z Garmin '
     + 'Connect (poziom przy pobudce minus przy zaśnięciu, np. +53) — często lepiej niż sam wynik snu '
-    + 'tłumaczy, dlaczego czułeś się słabo mimo dobrej nocy.';
+    + 'tłumaczy, dlaczego czułeś się słabo mimo dobrej nocy. <b>Body Battery po pobudce</b> to sam '
+    + 'poziom przy pobudce (0–100) — liczy się też wtedy, gdy zegarek część nocy nie mierzył i przyrost '
+    + 'wychodzi mały.';
   host.appendChild(scoreNote);
 
   const tip = document.createElement('p');
