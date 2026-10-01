@@ -397,10 +397,16 @@
       "steps": 8957
     },
     "2026-10-01": {
-      "bbDelta": null,
+      "bbDelta": 36,
+      "bbEnd": 46,
+      "bbStart": 9,
       "cycleDayEnc": "vDPX9NHLAgV/J5sPtd2jxf4vszOVkP5UNqn1ErV/",
-      "sleepScore": null,
-      "steps": 483
+      "qualifier": "POOR",
+      "sleepEnd": "10:10",
+      "sleepScore": 59,
+      "sleepSeconds": 25860,
+      "sleepStart": "02:20",
+      "steps": 514
     }
   },
   "enc": {
@@ -411,12 +417,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "gap": {
-    "date": "2026-10-01",
-    "device": "vívoactive 5",
-    "deviceLastUpload": "2026-10-01T08:42:35+00:00",
-    "reason": "not-recorded"
-  },
-  "generatedAt": "2026-10-01T09:07:14+00:00",
+  "generatedAt": "2026-10-01T11:32:33+00:00",
   "tokenExpires": "2026-10-10"
 }
