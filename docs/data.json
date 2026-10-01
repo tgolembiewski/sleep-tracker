@@ -394,7 +394,13 @@
       "sleepScore": 74,
       "sleepSeconds": 23818,
       "sleepStart": "03:08",
-      "steps": 5877
+      "steps": 8957
+    },
+    "2026-10-01": {
+      "bbDelta": null,
+      "cycleDayEnc": "vDPX9NHLAgV/J5sPtd2jxf4vszOVkP5UNqn1ErV/",
+      "sleepScore": null,
+      "steps": 483
     }
   },
   "enc": {
@@ -408,9 +414,9 @@
   "gap": {
     "date": "2026-10-01",
     "device": "vívoactive 5",
-    "deviceLastUpload": "2026-09-30T12:41:41+00:00",
-    "reason": "watch-not-synced"
+    "deviceLastUpload": "2026-10-01T08:42:35+00:00",
+    "reason": "not-recorded"
   },
-  "generatedAt": "2026-10-01T00:47:24+00:00",
+  "generatedAt": "2026-10-01T09:07:14+00:00",
   "tokenExpires": "2026-10-10"
 }
