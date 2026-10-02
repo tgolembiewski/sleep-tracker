@@ -160,8 +160,24 @@ function save() {
   }
 }
 
-function cycle() {
+/* The cycle being filled in. Settings, the seed import and new cycles always
+   work on this one, whatever is on screen. */
+function activeCycle() {
   return state.cycles.find((item) => item.id === state.activeCycleId) || state.cycles[0];
+}
+
+/* A past cycle opened from the history, for reading only. Kept in memory, not
+   in storage, so a relaunch always lands back on the cycle being filled in. */
+let viewingCycleId = null;
+
+function viewedCycle() {
+  if (!viewingCycleId || viewingCycleId === state.activeCycleId) return null;
+  return state.cycles.find((item) => item.id === viewingCycleId) || null;
+}
+
+/* The cycle on screen: the one being looked back at, or the active one. */
+function cycle() {
+  return viewedCycle() || activeCycle();
 }
 
 function cycleDates() {
@@ -270,6 +286,13 @@ function weekOfDate(date) {
    keyboard shortcut cannot write into next week. */
 function isFuture(date) {
   return date > todayISO();
+}
+
+/* No entries for a day still to come, nor for anything in a past cycle opened
+   for reading. Same double guard: no controls are built, and the writers
+   refuse too. */
+function isLocked(date) {
+  return Boolean(viewedCycle()) || isFuture(date);
 }
 
 /* Garmin's own bands: 0-25 low, 26-50 medium, 51-75 high, 76-100 very high. */
@@ -738,11 +761,14 @@ function renderGrid() {
       const starts = dates.indexOf(date) % 7 === 0 && dates.indexOf(date) > 0;
       cell.className = `day${active ? '' : ' inactive'}${date === today ? ' today' : ''}`
         + `${date > today ? ' future' : ''}${starts ? ' weekstart' : ''}`;
-      if (active && isFuture(date)) {
+      if (active && isLocked(date)) {
         // Shown, but as a reading rather than a control.
+        const mark = isFuture(date) ? undefined : habitState(date, habit.id);
         const box = document.createElement('div');
         box.className = 'cell';
-        box.innerHTML = '<span class="check off">·</span>';
+        box.innerHTML = mark === DONE ? `<span class="check">${CHECK_SVG}</span>`
+          : mark === MISSED ? `<span class="check miss">${CROSS_SVG}</span>`
+            : '<span class="check off">·</span>';
         cell.appendChild(box);
       } else if (active) {
         const mark = habitState(date, habit.id);
@@ -895,7 +921,7 @@ function summaryRow(fullTitle, dates, today, build, sectionStart, readOnly) {
     const spec = build(date);
     const body = spec.html || `<span class="value ${spec.className}">${spec.text}</span>`;
 
-    if (readOnly || isFuture(date)) {
+    if (readOnly || isLocked(date)) {
       const box = document.createElement('div');
       box.className = 'cell';
       box.innerHTML = body;
@@ -921,7 +947,7 @@ function renderNotes() {
   weekDates().forEach((date) => {
     const record = dayRecord(date, false);
     const text = record && record.note ? record.note.trim() : '';
-    const future = isFuture(date);
+    const future = isLocked(date);
     const button = document.createElement('button');
     button.type = 'button';
     button.disabled = future;
@@ -968,6 +994,7 @@ function render() {
   renderMeta();
   renderTokenBar();
   renderReminders();
+  renderViewBar();
   renderWeekbar();
   renderGrid();
   sizeGrid();
@@ -983,7 +1010,7 @@ function render() {
 
 /* empty → done → missed → empty */
 function toggleHabit(date, habitId) {
-  if (isFuture(date)) return;
+  if (isLocked(date)) return;
   const record = dayRecord(date, true);
   const current = record.checks[habitId];
 
@@ -996,6 +1023,7 @@ function toggleHabit(date, habitId) {
 }
 
 function setDayValue(date, key, value) {
+  if (isLocked(date)) return;
   const record = dayRecord(date, true);
   if (value === null || value === '') delete record[key];
   else record[key] = value;
@@ -1039,7 +1067,7 @@ function toast(message) {
 }
 
 function openEnergy(date) {
-  if (isFuture(date)) return;
+  if (isLocked(date)) return;
   const record = dayRecord(date, false);
   const current = record && record.energy ? record.energy : null;
   const labels = ['Wyczerpany', 'Ospały', 'Średnio', 'Dobrze', 'W pełni wypoczęty'];
@@ -1072,7 +1100,7 @@ function openEnergy(date) {
 }
 
 function openNumber(date, key) {
-  if (isFuture(date)) return;
+  if (isLocked(date)) return;
   // Both are plain 0-100 levels; only the Body Battery change carries a sign.
   const isScore = key === 'sleepScore' || key === 'bbEnd';
   const title = { sleepScore: 'Garmin Sleep Score', bbEnd: 'Body Battery po pobudce' }[key]
@@ -1120,7 +1148,7 @@ function openNumber(date, key) {
 }
 
 function openNote(date) {
-  if (isFuture(date)) return;
+  if (isLocked(date)) return;
   const record = dayRecord(date, false);
   const text = record && record.note ? record.note : '';
 
@@ -1166,7 +1194,7 @@ function cycleHint() {
 }
 
 function openSettings() {
-  const current = cycle();
+  const current = activeCycle();
 
   openSheet(`
     <h2>Ustawienia</h2>
@@ -1320,6 +1348,7 @@ function openSettings() {
     created.habits = current.habits.map((habit) => ({ ...habit, id: makeId() }));
     state.cycles.push(created);
     state.activeCycleId = created.id;
+    viewingCycleId = null;
     activeWeek = 1;
     save();
     closeSheet();
@@ -1338,7 +1367,7 @@ function openSettings() {
 function renderHabitEditor() {
   const container = sheet.querySelector('#habits');
   if (!container) return;
-  const current = cycle();
+  const current = activeCycle();
   container.innerHTML = '';
 
   current.habits.forEach((habit) => {
@@ -1393,20 +1422,91 @@ function renderCycleList() {
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-pressed', String(item.id === state.activeCycleId));
-    const days = Object.keys(item.days || {}).length;
-    button.innerHTML = `<span>${longDate(item.startDate)}</span><span>${days} dni z wpisami</span>`;
+    button.innerHTML = cycleButtonHtml(item);
+    // A past cycle opens for reading; switching which one is filled in would
+    // make it editable again, which is exactly what reading back must not do.
     button.addEventListener('click', () => {
-      state.activeCycleId = item.id;
-      activeWeek = 1;
-      save();
-      render();
-      renderCycleList();
-      const startInput = sheet.querySelector('#cyclestart');
-      if (startInput) startInput.value = cycle().startDate;
-      renderHabitEditor();
+      closeSheet();
+      viewCycle(item.id);
     });
     container.appendChild(button);
   });
+}
+
+/* --------------------------------------------------------------- history */
+
+function cycleRange(item) {
+  return `${longDate(item.startDate)} – ${longDate(addDays(item.startDate, CYCLE_LENGTH - 1))}`;
+}
+
+function cycleButtonHtml(item) {
+  const days = Object.keys(item.days || {}).length;
+  const tag = item.id === state.activeCycleId ? ' · bieżący' : '';
+  return `<span>${cycleRange(item)}</span><span>${days} dni z wpisami${tag}</span>`;
+}
+
+/* Opens a cycle for reading, or goes back to the active one. */
+function viewCycle(id) {
+  viewingCycleId = id === state.activeCycleId ? null : id;
+  activeWeek = 1;
+  render();
+  if (viewedCycle()) {
+    const scroller = gridScroller();
+    if (scroller) scroller.scrollTo({ left: 0 });
+    window.scrollTo({ top: 0 });
+  } else {
+    requestAnimationFrame(() => scrollToToday(false));
+  }
+}
+
+function renderViewBar() {
+  const bar = document.getElementById('viewbar');
+  if (!bar) return;
+  const viewed = viewedCycle();
+  bar.hidden = !viewed;
+  document.documentElement.toggleAttribute('data-viewing', Boolean(viewed));
+  if (!viewed) return;
+
+  bar.innerHTML = '';
+  const text = document.createElement('span');
+  text.className = 'text';
+  text.innerHTML = '<b>Podgląd poprzedniego okresu</b> · tylko do odczytu<br>';
+  text.appendChild(document.createTextNode(cycleRange(viewed)));
+
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.textContent = 'Wróć do bieżącego';
+  back.addEventListener('click', () => viewCycle(state.activeCycleId));
+
+  bar.append(text, back);
+}
+
+/* Every cycle, newest first, the active one marked. */
+function openHistory() {
+  const sorted = state.cycles.slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+  openSheet(`
+    <h2>Poprzednie okresy</h2>
+    <p class="sheet-sub">Starsze okresy otwierają się tylko do wglądu — bez edycji.</p>
+    <div class="cycle-list" id="history-list"></div>
+    ${sorted.length < 2 ? '<p class="hint">Na razie jest tylko bieżący okres. Kolejny zaczniesz w Ustawieniach → Rozpocznij nowy cykl.</p>' : ''}
+    <div class="row-actions">
+      <button class="btn primary" type="button" data-action="close">Zamknij</button>
+    </div>
+  `);
+
+  const list = sheet.querySelector('#history-list');
+  sorted.forEach((item) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(item.id === cycle().id));
+    button.innerHTML = cycleButtonHtml(item);
+    button.addEventListener('click', () => {
+      closeSheet();
+      viewCycle(item.id);
+    });
+    list.appendChild(button);
+  });
+  sheet.querySelector('[data-action="close"]').addEventListener('click', closeSheet);
 }
 
 /* -------------------------------------------------------------- seed sheet */
@@ -1420,7 +1520,7 @@ async function fetchSeed() {
 /* Fills in whatever the current cycle does not already have. Anything you have
    already entered on this device wins, so importing twice is harmless. */
 function applySeed(seed) {
-  const current = cycle();
+  const current = activeCycle();
   if (seed.startDate) current.startDate = seed.startDate;
 
   const known = new Map(current.habits.map((habit) => [habit.id, habit]));
@@ -2148,6 +2248,7 @@ document.addEventListener('scroll', (event) => {
 
 document.getElementById('print').addEventListener('click', openPrint);
 document.getElementById('open-settings').addEventListener('click', openSettings);
+document.getElementById('history').addEventListener('click', openHistory);
 document.getElementById('tokenbar').addEventListener('click', openTokenHelp);
 document.getElementById('refresh').addEventListener('click', syncNow);
 /* Auto-hiding top bar. Deliberately plain: a threshold so a stray pixel of

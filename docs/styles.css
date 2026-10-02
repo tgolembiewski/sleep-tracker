@@ -268,8 +268,42 @@ button { cursor: pointer; }
   .reminder, .reminder .bell { animation: none; }
 }
 
+/* Shown while a past cycle is open for reading: says so plainly and offers
+   the way back, so nobody mistakes the old sheet for this one. */
+.viewbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 16px 0;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--rule);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.viewbar[hidden] { display: none; }
+.viewbar .text { flex: 1; min-width: 0; }
+
+.viewbar button {
+  flex: none;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Reading an old sheet: today's reminders belong to today, not to it. */
+:root[data-viewing] .reminders { display: none; }
+
 @media print {
-  .tokenbar, .reminders { display: none !important; }
+  .tokenbar, .reminders, .viewbar { display: none !important; }
 }
 
 .topbar .grow { flex: 1; min-width: 0; }
