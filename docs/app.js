@@ -404,6 +404,145 @@ function renderTokenBar() {
     : `Dostęp do Garmina wygasa za ${plDays(left)} (${longDate(garmin.tokenExpires)}). Dotknij, aby odnowić.`;
 }
 
+/* ------------------------------------------------------------ reminders */
+
+/* A reminder is a line of text and the days it covers. One day is simply a
+   range that starts and ends on the same date. Closing a banner hides it for
+   the rest of that day only: the next day in the range brings it back. */
+function reminders() {
+  if (!Array.isArray(state.settings.reminders)) state.settings.reminders = [];
+  return state.settings.reminders;
+}
+
+function reminderStatus(item, today) {
+  if (!item.from || today < item.from) return 'later';
+  if (today > (item.to || item.from)) return 'past';
+  return 'today';
+}
+
+function renderReminders() {
+  const host = document.getElementById('reminders');
+  if (!host) return;
+  const today = todayISO();
+  const due = reminders().filter((item) =>
+    item.text && reminderStatus(item, today) === 'today' && item.dismissedOn !== today);
+
+  host.innerHTML = '';
+  host.hidden = due.length === 0;
+  due.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'reminder';
+
+    const text = document.createElement('span');
+    text.textContent = item.text;
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.textContent = '✕';
+    close.title = 'Ukryj na dziś';
+    close.setAttribute('aria-label', `Ukryj na dziś: ${item.text}`);
+    close.addEventListener('click', () => {
+      item.dismissedOn = todayISO();
+      save();
+      renderReminders();
+    });
+
+    row.append(text, close);
+    host.appendChild(row);
+  });
+}
+
+function reminderRange(item) {
+  const to = item.to || item.from;
+  return to === item.from ? longDate(item.from) : `${longDate(item.from)} – ${longDate(to)}`;
+}
+
+function renderReminderEditor() {
+  const container = sheet.querySelector('#reminder-list');
+  if (!container) return;
+  const today = todayISO();
+  container.innerHTML = '';
+
+  if (!reminders().length) {
+    container.innerHTML = '<p class="hint">Brak przypomnień.</p>';
+    return;
+  }
+
+  // Soonest first, finished ones at the bottom, so the list reads as a plan.
+  const order = { today: 0, later: 1, past: 2 };
+  const sorted = reminders().slice().sort((a, b) =>
+    order[reminderStatus(a, today)] - order[reminderStatus(b, today)]
+    || (a.from || '').localeCompare(b.from || ''));
+
+  sorted.forEach((item) => {
+    const status = reminderStatus(item, today);
+    const row = document.createElement('div');
+    row.className = 'reminder-row';
+    row.dataset.status = status;
+
+    const text = document.createElement('input');
+    text.type = 'text';
+    text.value = item.text;
+    text.setAttribute('aria-label', 'Treść przypomnienia');
+    text.addEventListener('change', () => {
+      item.text = text.value.trim();
+      save();
+      renderReminders();
+    });
+
+    const from = document.createElement('input');
+    from.type = 'date';
+    from.value = item.from || '';
+    from.setAttribute('aria-label', 'Od');
+
+    const to = document.createElement('input');
+    to.type = 'date';
+    to.value = item.to || item.from || '';
+    to.setAttribute('aria-label', 'Do');
+
+    // A range cannot end before it starts; moving one end drags the other.
+    from.addEventListener('change', () => {
+      if (!from.value) return;
+      item.from = from.value;
+      if (!item.to || item.to < item.from) item.to = item.from;
+      save();
+      renderReminderEditor();
+      renderReminders();
+    });
+    to.addEventListener('change', () => {
+      if (!to.value) return;
+      item.to = to.value < item.from ? item.from : to.value;
+      save();
+      renderReminderEditor();
+      renderReminders();
+    });
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '✕';
+    remove.title = 'Usuń przypomnienie';
+    remove.addEventListener('click', () => {
+      state.settings.reminders = reminders().filter((other) => other.id !== item.id);
+      save();
+      renderReminderEditor();
+      renderReminders();
+    });
+
+    const label = document.createElement('p');
+    label.className = 'reminder-when';
+    label.textContent = (status === 'today'
+      ? (item.dismissedOn === today ? 'Dziś · ukryte do jutra' : 'Dziś')
+      : status === 'later' ? 'Zaplanowane' : 'Minęło') + ' · ' + reminderRange(item);
+
+    const dates = document.createElement('div');
+    dates.className = 'reminder-dates';
+    dates.append(from, to);
+
+    row.append(text, remove, dates, label);
+    container.appendChild(row);
+  });
+}
+
 function openTokenHelp() {
   const left = tokenDaysLeft();
   const headline = left !== null && left <= 0
@@ -822,6 +961,7 @@ function render() {
 
   renderMeta();
   renderTokenBar();
+  renderReminders();
   renderWeekbar();
   renderGrid();
   sizeGrid();
@@ -1042,6 +1182,26 @@ function openSettings() {
     <p class="hint">„Tydzień” to tydzień cyklu, w którym nawyk wchodzi do gry. Wcześniejsze pola
     zostają szare — zgodnie z zasadą narastającego wdrażania.</p>
 
+    <h3>Przypomnienia</h3>
+    <div class="reminder-editor" id="reminder-list"></div>
+    <div class="field" style="margin-top:12px">
+      <label for="remtext">Nowe przypomnienie</label>
+      <input type="text" id="remtext" placeholder="np. bez kawy po 14:00">
+    </div>
+    <div class="reminder-dates">
+      <div class="field">
+        <label for="remfrom">Od</label>
+        <input type="date" id="remfrom" value="${todayISO()}">
+      </div>
+      <div class="field">
+        <label for="remto">Do</label>
+        <input type="date" id="remto" value="${todayISO()}">
+      </div>
+    </div>
+    <button class="btn" type="button" data-action="add-reminder">Dodaj przypomnienie</button>
+    <p class="hint">Jeden dzień: ta sama data w „Od” i „Do”. Przypomnienie pokazuje się
+    jako pasek po otwarciu aplikacji w każdym dniu z zakresu; ✕ ukrywa je do jutra.</p>
+
     <h3>Dane z Garmina</h3>
     <div class="field">
       <label for="dataurl">Adres pliku data.json</label>
@@ -1089,7 +1249,27 @@ function openSettings() {
   if (tokenHelp) tokenHelp.addEventListener('click', openTokenHelp);
 
   renderHabitEditor();
+  renderReminderEditor();
   renderCycleList();
+
+  const remFrom = sheet.querySelector('#remfrom');
+  const remTo = sheet.querySelector('#remto');
+  remFrom.addEventListener('change', () => {
+    if (remFrom.value && (!remTo.value || remTo.value < remFrom.value)) remTo.value = remFrom.value;
+  });
+  sheet.querySelector('[data-action="add-reminder"]').addEventListener('click', () => {
+    const textInput = sheet.querySelector('#remtext');
+    const text = textInput.value.trim();
+    if (!text) { textInput.focus(); return; }
+    const from = remFrom.value || todayISO();
+    const to = remTo.value && remTo.value >= from ? remTo.value : from;
+    reminders().push({ id: makeId(), text, from, to });
+    save();
+    textInput.value = '';
+    renderReminderEditor();
+    renderReminders();
+    toast('Przypomnienie dodane');
+  });
 
   sheet.querySelector('#cyclestart').addEventListener('change', (event) => {
     if (!event.target.value) return;
@@ -2000,7 +2180,10 @@ document.getElementById('refresh').addEventListener('click', syncNow);
 
 wideScreen.addEventListener('change', render);
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) loadGarmin(false).then(autoSync);
+  if (document.hidden) return;
+  // An installed app resumed on a new day should show that day's reminders.
+  renderReminders();
+  loadGarmin(false).then(autoSync);
 });
 
 // Hide the interface up front so it never flashes before the gate appears.

@@ -181,8 +181,39 @@ button { cursor: pointer; }
   cursor: pointer;
 }
 
+/* Reminders the user set for today, one strip each, under the token warning. */
+.reminders { display: grid; }
+.reminders[hidden] { display: none; }
+
+.reminder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.reminder span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+.reminder button {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
 @media print {
-  .tokenbar { display: none !important; }
+  .tokenbar, .reminders { display: none !important; }
 }
 
 .topbar .grow { flex: 1; min-width: 0; }
@@ -588,6 +619,40 @@ textarea { min-height: 130px; resize: vertical; }
 .hint { font-size: 12px; color: var(--ink-soft); margin: 6px 0 0; }
 
 .habit-editor { display: grid; gap: 8px; }
+
+.reminder-editor { display: grid; gap: 10px; }
+
+.reminder-row {
+  display: grid;
+  grid-template-columns: 1fr 38px;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.reminder-row[data-status="past"] { opacity: .55; }
+
+.reminder-row > button {
+  height: 40px;
+  border: 1px solid var(--rule);
+  border-radius: 11px;
+  background: var(--surface-alt);
+  color: var(--bad);
+}
+
+.reminder-row .reminder-dates,
+.reminder-row .reminder-when { grid-column: 1 / -1; }
+
+.reminder-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.reminder-dates .field { margin-bottom: 8px; }
+
+.reminder-when { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.reminder-row[data-status="today"] .reminder-when { color: var(--good); font-weight: 600; }
 
 .habit-row {
   display: grid;
