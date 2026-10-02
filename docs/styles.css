@@ -183,7 +183,7 @@ button { cursor: pointer; }
 
 /* Reminders the user set for today: a card each, in warm amber - the one
    colour the blue interface never uses, so it is the first thing on screen
-   and cannot be mistaken for the grid's headers. Same in both themes. */
+   and cannot be mistaken for the grid's headers. Toned down in dark mode. */
 .reminders {
   display: grid;
   gap: 8px;
@@ -236,6 +236,20 @@ button { cursor: pointer; }
 }
 
 .reminder button:hover { background: rgba(43, 29, 0, .2); }
+
+/* On a dark screen full amber glares; a deep amber card with a bright edge
+   still stands apart from the blue without lighting up the room. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .reminder { background: #3d2f0c; border-color: #6b5214; border-left-color: #e0a526; color: #f7e3b0; box-shadow: none; }
+  :root:not([data-theme="light"]) .reminder .bell { background: #5a4512; color: #f7e3b0; }
+  :root:not([data-theme="light"]) .reminder button { background: rgba(247, 227, 176, .08); }
+  :root:not([data-theme="light"]) .reminder button:hover { background: rgba(247, 227, 176, .16); }
+}
+
+:root[data-theme="dark"] .reminder { background: #3d2f0c; border-color: #6b5214; border-left-color: #e0a526; color: #f7e3b0; box-shadow: none; }
+:root[data-theme="dark"] .reminder .bell { background: #5a4512; color: #f7e3b0; }
+:root[data-theme="dark"] .reminder button { background: rgba(247, 227, 176, .08); }
+:root[data-theme="dark"] .reminder button:hover { background: rgba(247, 227, 176, .16); }
 
 @keyframes reminder-in {
   from { opacity: 0; transform: translateY(-6px); }
