@@ -433,7 +433,13 @@ function renderReminders() {
     const row = document.createElement('div');
     row.className = 'reminder';
 
+    const bell = document.createElement('span');
+    bell.className = 'bell';
+    bell.setAttribute('aria-hidden', 'true');
+    bell.textContent = '🔔';
+
     const text = document.createElement('span');
+    text.className = 'text';
     text.textContent = item.text;
 
     const close = document.createElement('button');
@@ -447,7 +453,7 @@ function renderReminders() {
       renderReminders();
     });
 
-    row.append(text, close);
+    row.append(bell, text, close);
     host.appendChild(row);
   });
 }
