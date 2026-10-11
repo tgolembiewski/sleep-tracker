@@ -525,6 +525,12 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-10-10T11:06:21+00:00",
+  "gap": {
+    "date": "2026-10-11",
+    "device": "vívoactive 5",
+    "deviceLastUpload": "2026-10-10T09:58:53+00:00",
+    "reason": "watch-not-synced"
+  },
+  "generatedAt": "2026-10-11T00:23:46+00:00",
   "tokenExpires": "2026-10-10"
 }
