@@ -530,15 +530,27 @@
     },
     "2026-10-12": {
       "bbDelta": 26,
-      "bbEnd": 31,
+      "bbEnd": 5,
       "bbStart": 5,
       "cycleDayEnc": "3uEyxcZg9WEIl8QUGoIJRvbZcbDHwd5XJyPaZ4GR",
       "qualifier": "POOR",
-      "sleepEnd": "09:34",
-      "sleepScore": 51,
-      "sleepSeconds": 24420,
-      "sleepStart": "02:35",
+      "sleepEnd": "23:57",
+      "sleepScore": 19,
+      "sleepSeconds": 1920,
+      "sleepStart": "23:25",
       "steps": 8924
+    },
+    "2026-10-13": {
+      "bbDelta": 30,
+      "bbEnd": 35,
+      "bbStart": 5,
+      "cycleDayEnc": "0sQLpKOWirb134Nd9aI6WfcgxO9TsFdB6jVexLeW",
+      "qualifier": "FAIR",
+      "sleepEnd": "08:35",
+      "sleepScore": 63,
+      "sleepSeconds": 21840,
+      "sleepStart": "02:31",
+      "steps": 1444
     }
   },
   "enc": {
@@ -549,6 +561,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-10-12T22:26:36+00:00",
+  "generatedAt": "2026-10-13T09:23:01+00:00",
   "tokenExpires": "2026-10-10"
 }
