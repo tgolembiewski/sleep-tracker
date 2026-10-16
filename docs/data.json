@@ -574,7 +574,19 @@
       "sleepScore": 62,
       "sleepSeconds": 20520,
       "sleepStart": "03:05",
-      "steps": 1150
+      "steps": 4479
+    },
+    "2026-10-16": {
+      "bbDelta": 66,
+      "bbEnd": 73,
+      "bbStart": 7,
+      "cycleDayEnc": "4RVYQpDShLdXWD5p52EotfyUJsEIw2QUY8/jIfY=",
+      "qualifier": "FAIR",
+      "sleepEnd": "09:59",
+      "sleepScore": 77,
+      "sleepSeconds": 26511,
+      "sleepStart": "02:36",
+      "steps": 4571
     }
   },
   "enc": {
@@ -585,12 +597,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "gap": {
-    "date": "2026-10-16",
-    "device": "vívoactive 5",
-    "deviceLastUpload": "2026-10-15T10:04:33+00:00",
-    "reason": "watch-not-synced"
-  },
-  "generatedAt": "2026-10-16T09:40:47+00:00",
+  "generatedAt": "2026-10-16T12:18:20+00:00",
   "tokenExpires": "2026-10-10"
 }
