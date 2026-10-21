@@ -646,7 +646,7 @@
       "sleepScore": 80,
       "sleepSeconds": 27270,
       "sleepStart": "02:27",
-      "steps": 1460
+      "steps": 1646
     }
   },
   "enc": {
@@ -657,6 +657,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-10-21T15:06:16+00:00",
+  "generatedAt": "2026-10-21T19:10:36+00:00",
   "tokenExpires": "2026-10-10"
 }
