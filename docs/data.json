@@ -664,11 +664,11 @@
     "saltFrom": "gate.json + 'sen-data'"
   },
   "gap": {
-    "date": "2026-10-22",
+    "date": "2026-10-23",
     "device": "vívoactive 5",
     "deviceLastUpload": "2026-10-21T23:27:16+00:00",
-    "reason": "not-recorded"
+    "reason": "watch-not-synced"
   },
-  "generatedAt": "2026-10-22T00:08:59+00:00",
+  "generatedAt": "2026-10-23T00:06:20+00:00",
   "tokenExpires": "2026-10-10"
 }
