@@ -707,6 +707,18 @@
       "sleepSeconds": 28380,
       "sleepStart": "01:59",
       "steps": 5969
+    },
+    "2026-10-27": {
+      "bbDelta": 55,
+      "bbEnd": 63,
+      "bbStart": 8,
+      "cycleDayEnc": "E4IDHUHbRlrGd4qiWjwHksRrAhcBwUvW59m5jgZ/",
+      "qualifier": "FAIR",
+      "sleepEnd": "10:25",
+      "sleepScore": 78,
+      "sleepSeconds": 25224,
+      "sleepStart": "03:24",
+      "steps": 718
     }
   },
   "enc": {
@@ -717,12 +729,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "gap": {
-    "date": "2026-10-27",
-    "device": "vívoactive 5",
-    "deviceLastUpload": "2026-10-27T00:36:26+00:00",
-    "reason": "garmin-processing"
-  },
-  "generatedAt": "2026-10-27T00:43:00+00:00",
+  "generatedAt": "2026-10-27T10:40:12+00:00",
   "tokenExpires": "2026-10-10"
 }
