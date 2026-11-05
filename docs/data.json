@@ -808,11 +808,11 @@
     "saltFrom": "gate.json + 'sen-data'"
   },
   "gap": {
-    "date": "2026-11-04",
+    "date": "2026-11-05",
     "device": "vívoactive 5",
     "deviceLastUpload": "2026-11-03T01:02:22+00:00",
     "reason": "watch-not-synced"
   },
-  "generatedAt": "2026-11-04T01:36:32+00:00",
+  "generatedAt": "2026-11-05T01:43:33+00:00",
   "tokenExpires": "2026-10-10"
 }
