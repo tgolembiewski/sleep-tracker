@@ -793,10 +793,52 @@
       "steps": 7452
     },
     "2026-11-03": {
-      "bbDelta": null,
+      "bbDelta": 31,
+      "bbEnd": 45,
+      "bbStart": 14,
       "cycleDayEnc": "DFElMEUPneH1XP9Zjq5BNOMPxRxE2qhTROXM/j2S",
-      "sleepScore": null,
-      "steps": 71
+      "qualifier": "FAIR",
+      "sleepEnd": "09:39",
+      "sleepScore": 67,
+      "sleepSeconds": 24900,
+      "sleepStart": "02:32",
+      "steps": 10445
+    },
+    "2026-11-04": {
+      "bbDelta": 22,
+      "bbEnd": 27,
+      "bbStart": 5,
+      "cycleDayEnc": "2ZVs4+BAC2ljL5SRPwuBOD+EZnOrm9K2kdz/XUzd",
+      "qualifier": "POOR",
+      "sleepEnd": "08:13",
+      "sleepScore": 51,
+      "sleepSeconds": 19179,
+      "sleepStart": "02:37",
+      "steps": 15460
+    },
+    "2026-11-05": {
+      "bbDelta": 36,
+      "bbEnd": 41,
+      "bbStart": 5,
+      "cycleDayEnc": "kZf6XpyWVzZyKtvP3loKCef6Gq5wOa33KcPvD7Ud",
+      "qualifier": "FAIR",
+      "sleepEnd": "08:05",
+      "sleepScore": 67,
+      "sleepSeconds": 22260,
+      "sleepStart": "01:44",
+      "steps": 11088
+    },
+    "2026-11-06": {
+      "bbDelta": 52,
+      "bbEnd": 78,
+      "bbStart": 27,
+      "cycleDayEnc": "fS83BJkWxA5An+01ip7zGG+BmX8UoV0N7QbWB+jq",
+      "qualifier": "FAIR",
+      "sleepEnd": "08:30",
+      "sleepScore": 71,
+      "sleepSeconds": 20460,
+      "sleepStart": "02:45",
+      "steps": 10205
     },
     "2026-11-07": {
       "bbDelta": 27,
@@ -843,6 +885,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-11-09T23:07:11+00:00",
+  "generatedAt": "2026-11-09T23:44:16+00:00",
   "tokenExpires": "2026-10-10"
 }
