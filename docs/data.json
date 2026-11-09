@@ -797,6 +797,42 @@
       "cycleDayEnc": "DFElMEUPneH1XP9Zjq5BNOMPxRxE2qhTROXM/j2S",
       "sleepScore": null,
       "steps": 71
+    },
+    "2026-11-07": {
+      "bbDelta": 27,
+      "bbEnd": 31,
+      "bbStart": 5,
+      "cycleDayEnc": "FpfSYjo8SJUOX78kaXwjuquYWYdR6GZudtX0bM8b",
+      "qualifier": "POOR",
+      "sleepEnd": "09:58",
+      "sleepScore": 56,
+      "sleepSeconds": 23880,
+      "sleepStart": "03:17",
+      "steps": 3770
+    },
+    "2026-11-08": {
+      "bbDelta": 39,
+      "bbEnd": 44,
+      "bbStart": 5,
+      "cycleDayEnc": "eoHd6e4cznqQHnClWv3DTJZvTbcXxt4BcDJAcHm2",
+      "qualifier": "FAIR",
+      "sleepEnd": "10:15",
+      "sleepScore": 78,
+      "sleepSeconds": 24840,
+      "sleepStart": "03:17",
+      "steps": 8097
+    },
+    "2026-11-09": {
+      "bbDelta": 67,
+      "bbEnd": 74,
+      "bbStart": 7,
+      "cycleDayEnc": "wJx+LD7mBmk9wo5RMcLjXWZajMvu8T5jbbwV4cQc",
+      "qualifier": "FAIR",
+      "sleepEnd": "10:03",
+      "sleepScore": 78,
+      "sleepSeconds": 28260,
+      "sleepStart": "02:12",
+      "steps": 10667
     }
   },
   "enc": {
@@ -807,12 +843,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "gap": {
-    "date": "2026-11-09",
-    "device": "vívoactive 5",
-    "deviceLastUpload": "2026-11-03T01:02:22+00:00",
-    "reason": "watch-not-synced"
-  },
-  "generatedAt": "2026-11-09T01:09:39+00:00",
+  "generatedAt": "2026-11-09T23:07:11+00:00",
   "tokenExpires": "2026-10-10"
 }
