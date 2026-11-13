@@ -892,7 +892,7 @@
       "bbDelta": 29,
       "bbEnd": 34,
       "bbStart": 5,
-      "cycleDayEnc": "MI5BubUnJezJJFwu0LV9yRuk5IJ6QUIIkmyuaXQ=",
+      "cycleDayEnc": "Ryv8wCMDyBe9nJthyS4Ze9zR6+hpThou5I90fx+q",
       "qualifier": "FAIR",
       "sleepEnd": "09:13",
       "sleepScore": 69,
@@ -904,13 +904,19 @@
       "bbDelta": 31,
       "bbEnd": 36,
       "bbStart": 5,
-      "cycleDayEnc": "9ujwrderGXf5WCD6r5SMWvFfTMsMN2ylc4pBAX0=",
+      "cycleDayEnc": "/pRnM2owal9IoELt9zmQ2GoYTf0wllyD6OJN27E=",
       "qualifier": "FAIR",
       "sleepEnd": "10:43",
       "sleepScore": 66,
       "sleepSeconds": 25860,
       "sleepStart": "03:24",
-      "steps": 4584
+      "steps": 4940
+    },
+    "2026-11-13": {
+      "bbDelta": null,
+      "cycleDayEnc": "f8YiIqRl/3hsvlK5lVoBD2jk3CkYN+VGcF1IAi8=",
+      "sleepScore": null,
+      "steps": 302
     }
   },
   "enc": {
@@ -921,6 +927,12 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-11-12T21:47:16+00:00",
+  "gap": {
+    "date": "2026-11-13",
+    "device": "vívoactive 5",
+    "deviceLastUpload": "2026-11-13T00:54:38+00:00",
+    "reason": "not-recorded"
+  },
+  "generatedAt": "2026-11-13T02:04:01+00:00",
   "tokenExpires": "2026-10-10"
 }
