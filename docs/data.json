@@ -934,7 +934,7 @@
       "sleepScore": 70,
       "sleepSeconds": 28860,
       "sleepStart": "02:45",
-      "steps": 4946
+      "steps": 5995
     }
   },
   "enc": {
@@ -945,6 +945,12 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-11-14T19:49:49+00:00",
+  "gap": {
+    "date": "2026-11-15",
+    "device": "vívoactive 5",
+    "deviceLastUpload": "2026-11-14T23:32:19+00:00",
+    "reason": "watch-not-synced"
+  },
+  "generatedAt": "2026-11-15T01:15:05+00:00",
   "tokenExpires": "2026-10-10"
 }
