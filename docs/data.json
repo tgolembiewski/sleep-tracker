@@ -1090,7 +1090,19 @@
       "sleepScore": 56,
       "sleepSeconds": 20760,
       "sleepStart": "04:28",
-      "steps": 4939
+      "steps": 6699
+    },
+    "2026-11-28": {
+      "bbDelta": 56,
+      "bbEnd": 74,
+      "bbStart": 18,
+      "cycleDayEnc": "JsWL2VduqyY6Rt1YJQqABBN9u8YiZ6XnDdxjT/IZ",
+      "qualifier": "GOOD",
+      "sleepEnd": "10:46",
+      "sleepScore": 80,
+      "sleepSeconds": 25440,
+      "sleepStart": "03:40",
+      "steps": 438
     }
   },
   "enc": {
@@ -1101,6 +1113,6 @@
     "layout": "base64(12-byte nonce || ciphertext || tag)",
     "saltFrom": "gate.json + 'sen-data'"
   },
-  "generatedAt": "2026-11-27T23:18:08+00:00",
+  "generatedAt": "2026-11-28T14:05:10+00:00",
   "tokenExpires": "2026-10-10"
 }
